@@ -12,7 +12,6 @@ using System.IO;
 using Windows.Storage;
 using Windows.Networking.Connectivity;
 using Windows.UI.Xaml.Controls;
-using Windows.Storage.Compression;
 
 namespace ArcShare.Server
 {
@@ -75,93 +74,131 @@ namespace ArcShare.Server
 		private async void SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
 		{
 			StreamSocket socket = args.Socket;
-
 			StringBuilder httpRequestBuilder = new StringBuilder();
+			HttpRequestHeader header = null;
 			//读取输入数据流
 			using (var input = socket.InputStream)
 			{
 				try
 				{
+					bool isHeaderRead = false, isPost = false;
+					var spliter = new byte[] { 0x0D, 0x0A, 0x0D, 0x0A }; // \r\n\r\n
+
 					var data = new byte[BufferSize];
 					IBuffer buffer = data.AsBuffer();
+
+					var contentdata = new byte[BufferSize];
+					IBuffer contentBuf = contentdata.AsBuffer();
+
 					uint dataRead = BufferSize;
 					while (dataRead == BufferSize)
 					{
-						await input.ReadAsync(buffer, dataRead, InputStreamOptions.Partial);
-						httpRequestBuilder.Append(Encoding.UTF8.GetString(data, 0, data.Length));
-						dataRead = buffer.Length;
+						if (!isHeaderRead)
+						{
+							await input.ReadAsync(buffer, dataRead, InputStreamOptions.Partial);
+							httpRequestBuilder.Append(Encoding.UTF8.GetString(data, 0, data.Length));
+							dataRead = buffer.Length;
+						}
+						
+						if (buffer.ToArray().Intersect(spliter).Any() && !isHeaderRead) //判断buffer里是否有两个换行，并且是第一次出现
+						{
+							string read = httpRequestBuilder.ToString();
+							int index = read.IndexOf(spliter.ToString());
+							string headerstr = read.Substring(0, index);
+							header = HttpRequestHeader.Create(headerstr);
+							isHeaderRead = true;
+
+							if (header.Method == "GET") await OnGet(socket, header);
+							else
+							{
+								isPost = true;
+								byte[] remained = Encoding.UTF8.GetBytes(read.Substring(index + 4));
+
+								continue;
+							}
+						}
+
+						if (isPost)
+						{
+							await input.ReadAsync(contentBuf, dataRead, InputStreamOptions.Partial);
+							dataRead = contentBuf.Length;
+						}
 					}
 				}
 				catch (Exception ex)
 				{
 					Debug.WriteLine(ex.Message, "Read Input Error");
 				}
+			}
+			Debug.WriteLine("Connection Received:" + header.RequestedUrl);
+		}
+		#endregion
 
+		/// <summary>
+		/// 在收到GET请求时的操作
+		/// </summary>
+		/// <param name="socket"></param>
+		/// <param name="header"></param>
+		/// <returns></returns>
+		private async Task OnGet(StreamSocket socket, HttpRequestHeader header)
+		{
+			if (Collection.Count == 1)
+			{ //只传一个文件就直接下载
+				var file = Collection.First().File;
+				await WriteResponseAsync(socket.OutputStream, file, HttpStatusCode.OK, true);
+				return;
 			}
 
-			HttpRequest request = HttpRequest.Create(httpRequestBuilder.ToString());
-			Debug.WriteLine("Connection Received:" + request.RequestedUrl);
-
-			if (request.Method == "GET")
+			if (header.RequestedUrl == "/" || header.RequestedUrl == "/index")
 			{
-				if (Collection.Count == 1)
-				{ //只传一个文件就直接下载
-					var file = Collection.First().File;
-					await WriteResponseAsync(socket.OutputStream, file, HttpStatusCode.OK, true);
-					return;
-				}
-
-				if (request.RequestedUrl == "/" || request.RequestedUrl == "/index")
+				//主页
+				if (IndexFile == null)
 				{
-					//主页
-					if (IndexFile == null)
-					{
-						request.RequestedUrl = "/index.html";
-						IndexFile = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content" + request.RequestedUrl));
-					}
-					await WriteResponseAsync(socket.OutputStream, IndexFile, HttpStatusCode.OK);
-					return;
+					header.RequestedUrl = "/index.html";
+					IndexFile = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content" + header.RequestedUrl));
 				}
+				await WriteResponseAsync(socket.OutputStream, IndexFile, HttpStatusCode.OK);
+				return;
+			}
 
-				if (request.RequestedUrl.StartsWith("/get/"))
-				{
-					//DEBUG
-					//Debug.Write(string.Format("{0}\n", httpRequestBuilder.ToString()));
+			if (header.RequestedUrl.StartsWith("/get/"))
+			{
+				//DEBUG
+				//Debug.Write(string.Format("{0}\n", httpRequestBuilder.ToString()));
 
-					//文件内容
-					int requested = Convert.ToInt32(request.RequestedUrl.Substring(5));
-					var file = Collection[requested].File;
+				//文件内容
+				int requested = Convert.ToInt32(header.RequestedUrl.Substring(5));
+				var file = Collection[requested].File;
 
-					//写输出流
-					await WriteResponseAsync(socket.OutputStream, file, HttpStatusCode.OK, true);
-
-					return;
-				}
-
-				if (request.RequestedUrl.StartsWith("/zip/"))
-				{
-					await WriteZipResponseAsync(socket.OutputStream);
-					return;
-				}
-
-				try
-				{
-					var file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content" + request.RequestedUrl));
-					using (var os = socket.OutputStream)
-					{
-						await WriteResponseAsync(os, file, HttpStatusCode.OK);
-					}
-				}
-				catch (FileNotFoundException)
-				{
-					var notFound = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content/404.html"));
-					await WriteResponseAsync(socket.OutputStream, notFound, HttpStatusCode.NotFound);
-				}
+				//写输出流
+				await WriteResponseAsync(socket.OutputStream, file, HttpStatusCode.OK, true);
 
 				return;
 			}
+
+			if (header.RequestedUrl.StartsWith("/zip/"))
+			{
+				await WriteZipResponseAsync(socket.OutputStream);
+				return;
+			}
+
+			try
+			{
+				var file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content" + header.RequestedUrl));
+				using (var os = socket.OutputStream)
+				{
+					await WriteResponseAsync(os, file, HttpStatusCode.OK);
+				}
+			}
+			catch (FileNotFoundException)
+			{
+				var notFound = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content/404.html"));
+				await WriteResponseAsync(socket.OutputStream, notFound, HttpStatusCode.NotFound);
+			}
+
+			return;
 		}
-		#endregion
+
 
 		/// <summary>
 		/// 将文件内容写入到输出流

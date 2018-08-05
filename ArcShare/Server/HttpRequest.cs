@@ -19,7 +19,7 @@ namespace ArcShare.Server
 
 		//消息体
 	*/
-	class HttpRequest
+	class HttpRequestHeader
 	{
 		public string Method { get; set; }
 		public string RequestedUrl { get; set; }
@@ -29,12 +29,14 @@ namespace ArcShare.Server
 		public string UserAgent { get; set; }
 		public UInt64 RangeX { get; set; }
 		public UInt64 RangeY { get; set; }
+		public string Origin { get; set; }
+		public string ContentType { get; set; }
 
 		//public string RequestBody { get; set; }
 
-		public static HttpRequest Create(string raw)
+		public static HttpRequestHeader Create(string raw)
 		{
-			HttpRequest request = new HttpRequest();
+			HttpRequestHeader request = new HttpRequestHeader();
 			string[] lines = raw.Split('\n');
 			request.Method = lines[0].Split(' ')[0];
 
@@ -75,7 +77,13 @@ namespace ArcShare.Server
 					case "User-Agent":
 						request.UserAgent = parts[1];
 						break;
-					//case "Range":
+					case "Origin":
+						request.Origin = parts[1];
+						break;
+					case "Content-Type":
+						request.ContentType = parts[1];
+						break;
+						//case "Range":
 						//Range: bytes=7340032-8388607
 						//string ranges = parts[1];
 						//var spl = ranges.Substring(6).Split('-');

@@ -179,6 +179,7 @@
     <Content Include="Server\content\img\overlays\09.png" />
     <Content Include="Server\content\img\svg\arrow_left.svg" />
     <Content Include="Server\content\img\svg\arrow_right.svg" />
+    <Content Include="Server\content\js\arcshare.js" />
     <Content Include="Server\content\send.html" />
     <Content Include="Server\content\js\bootstrap.js" />
     <Content Include="Server\content\js\bootstrap.min.js" />
