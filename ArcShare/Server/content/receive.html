@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Arc Share</title>
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="./css/bootstrap.min.css">
+  <!-- Fluent Design Bootstrap -->
+  <link rel="stylesheet" href="./css/fluent.css">
+  <!-- Micon icons-->
+  <link rel="stylesheet" href="./css/micon.min.css">
+  <!--Custom style -->
+
+  <link rel="icon" sizes="192x192" href="img/android-desktop.png">
+  <link rel="apple-touch-icon-precomposed" href="img/ios-desktop.png">
+  <link rel="shortcut icon" href="img/favicon.png">
+
+</head>
+
+<body>
+  <header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+      <div class="container">
+        <a href="#" class="navbar-brand hidden-sm-up">Arc Share</a>
+      </div>
+    </nav>
+  </header>
+  <main role="main" class="container">
+    <div class="row">
+      <table class="table shadow-sm p-3 mb-5 bg-white table-hover" id="table">
+        <thead class="thead-light">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">文件列表</th>
+            <th scope="col">大小</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="clickable-row">
+            <td>1</td>
+            <td>
+              <a href="#">论识别手机壳颜色改变APP主题的可能实现.pdf</a>
+            </td>
+            <td>2.5MB</td>
+          </tr>
+          <tr class="clickable-row">
+            <td>2</td>
+            <td>
+              <a href="#">算法竞赛从入门到入土-第一章.ppt</a>
+            </td>
+            <td>5.0MB</td>
+          </tr>
+          <tr class="clickable-row">
+            <td>3</td>
+            <td>
+              <a href="#">震惊！某后端程序猿被逼写前端代码.html</a>
+            </td>
+            <td>10.0MB</td>
+          </tr>
+          <tr class="clickable-row">
+            <td>4</td>
+            <td>
+              <a href="#">震惊！三体人和罗辑不得不说的秘密.avi</a>
+            </td>
+            <td>10.0MB</td>
+          </tr>
+          <tr class="clickable-row">
+            <td>4</td>
+            <td>
+              <a href="#">震惊！三体人和叶文洁不得不说的秘密.avi</a>
+            </td>
+            <td>10.0MB</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row">
+      <div class="col-md-auto">
+        <p style="margin-top: 10px;">进度 <span id="percentageNum">25</span>%</p>
+      </div>
+      <div class="col">
+        <div class="progress progress-fluent my-3 ">
+          <div class="progress-bar " role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="padding-top: 1.3rem;">
+      <div class="col">
+        <button type="button" class="btn btn-info">浏览文件</button>
+
+        <button type="button" class="btn btn-secondary">选择全部</button>
+        <button type="button" class="btn btn-secondary">取消选择</button>
+        <button type="button" class="btn btn-danger">删除选中</button>
+      </div>
+      <button id="sendbtn" type="button" class="btn btn-primary float-lg-left" data-toggle="tooltip" data-placement="bottom"
+        title="发送列表中的所有文件到主机">
+        <i class="mi mi-Send"></i> 发送</button>
+    </div>
+    </div>
+  </main>
+
+
+  <footer class="page-footer font-small pt-4 sticky-footer">
+    <!-- Footer Links -->
+    <div class="container text-center text-md-left">
+      <!-- Grid row -->
+      <div class="row">
+        <!-- Grid column -->
+        <div class="col-md-6 mt-md-0 mt-3">
+          <!-- Content -->
+          <h5 class="text-uppercase">Arc Share</h5>
+          <p class="text-muted">Offering you a quick, offline file sharing between any platforms.
+            <br/>Made with &hearts; by Copper</p>
+        </div>
+        <!-- Grid column -->
+      </div>
+      <!-- Grid row -->
+    </div>
+    <!-- Footer Links -->
+
+    <!-- Copyright -->
+    <div class="footer-copyright text-center py-3">
+      <span>
+        <a href="https://www.microsoft.com/store/apps/9MZ51ZV006J8?ocid=badge" target="_blank">Get Arc Share from Microsoft Store</a>
+      </span>
+      <span> | © 2018 Copyright
+        <a href="https://www.copperion.com"> Copper</a>
+      </span>
+
+    </div>
+    <!-- Copyright -->
+    <!-- Scripts -->
+    <!-- JQuery -->
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <!-- Bootstrap tooltips -->
+    <script type="text/javascript" src="js/popper.min.js"></script>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+      $(".clickable-row").click(function () {
+        if ($(this).hasClass("bg-secondary"))
+          $(this).removeClass('bg-secondary');
+        else
+          $(this).addClass('bg-secondary');
+      })
+
+      $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+      })
+    </script>
+</body>
+
+</html>
