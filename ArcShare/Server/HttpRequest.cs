@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace ArcShare.Server
 {
@@ -27,10 +29,11 @@ namespace ArcShare.Server
 		public string Connection { get; set; }
 		public string Host { get; set; }
 		public string UserAgent { get; set; }
-		public UInt64 RangeX { get; set; }
-		public UInt64 RangeY { get; set; }
+		//public UInt64 RangeX { get; set; }
+		//public UInt64 RangeY { get; set; }
 		public string Origin { get; set; }
 		public string ContentType { get; set; }
+		public long ContentLength { get; set; }
 
 		//public string RequestBody { get; set; }
 
@@ -83,6 +86,9 @@ namespace ArcShare.Server
 					case "Content-Type":
 						request.ContentType = parts[1];
 						break;
+					case "Content-Length":
+						request.ContentLength = Convert.ToInt64(parts[1]);
+						break;
 						//case "Range":
 						//Range: bytes=7340032-8388607
 						//string ranges = parts[1];
@@ -94,5 +100,13 @@ namespace ArcShare.Server
 			}
 			return request;
 		}
+	}
+
+
+	class MultiPartItem
+	{
+		public string FileName { get; set; }
+		public StorageFile storageFile { get; set; }
+		public Stream ReadStream;
 	}
 }

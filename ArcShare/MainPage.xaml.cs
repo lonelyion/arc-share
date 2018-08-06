@@ -27,6 +27,9 @@ namespace ArcShare
 				//sendFrame.Navigate(typeof(SendPage));
 				receiveFrame.Navigate(typeof(ReceivePage));
 				settingsFrame.Navigate(typeof(SettingsPage));
+
+				AppSettings.CurrentServer = new HttpServer(4000);
+				AppSettings.CurrentServer.Start();
 			};
 		}
 

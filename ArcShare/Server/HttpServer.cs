@@ -35,10 +35,12 @@ namespace ArcShare.Server
 		#region Members
 		private readonly StreamSocketListener socketListener;
 		ushort Port = 4000;
-		private const int BufferSize = 8192;
+		private const int BufferSize = 1 << 16;
 		private StorageFile IndexFile;
 		private List<FileItem> Collection;
 		private ServerStatus Status;
+		private string Boundary;
+
 		public string ServerAddress
 		{
 			get { return string.Format("http://{0}:{1}", GetLocalIp(), Port); }
@@ -75,53 +77,94 @@ namespace ArcShare.Server
 		{
 			StreamSocket socket = args.Socket;
 			StringBuilder httpRequestBuilder = new StringBuilder();
-			HttpRequestHeader header = null;
 			//读取输入数据流
-			using (var input = socket.InputStream)
+			using (var input = socket.InputStream.AsStreamForRead())
 			{
 				try
 				{
+					var buf = new byte[BufferSize];
+					var linebuffer = new StringBuilder();
+					int count = 0;
 					bool isHeaderRead = false, isPost = false;
-					var spliter = new byte[] { 0x0D, 0x0A, 0x0D, 0x0A }; // \r\n\r\n
+					byte[] spliter = Encoding.ASCII.GetBytes("\r\n\r\n");
+					HttpRequestHeader header = new HttpRequestHeader();
 
-					var data = new byte[BufferSize];
-					IBuffer buffer = data.AsBuffer();
+					var contentBuf = new byte[BufferSize];
+					int contentProcessFlag = 0, boundaryCount = 0;
+					bool boundaryFlag = false;
+					List<MultiPartItem> items = new List<MultiPartItem>();
+					Stream WriteStream = null;
 
-					var contentdata = new byte[BufferSize];
-					IBuffer contentBuf = contentdata.AsBuffer();
+					var folderToStore = await Windows.Storage.ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.OpenIfExists);
+					Debug.WriteLine(folderToStore.Path);
+					//var folderToStore = await Windows.Storage.DownloadsFolder.
 
-					uint dataRead = BufferSize;
-					while (dataRead == BufferSize)
-					{
-						if (!isHeaderRead)
+					while ((count = input.Read(buf, 0, buf.Length)) > 0)
+					{   //从理论上来说，32kb的buffer无论如何都搞得完header
+						contentBuf = buf;
+						if (!isHeaderRead && buf.Intersect(spliter).Any())
 						{
-							await input.ReadAsync(buffer, dataRead, InputStreamOptions.Partial);
-							httpRequestBuilder.Append(Encoding.UTF8.GetString(data, 0, data.Length));
-							dataRead = buffer.Length;
-						}
-						
-						if (buffer.ToArray().Intersect(spliter).Any() && !isHeaderRead) //判断buffer里是否有两个换行，并且是第一次出现
-						{
-							string read = httpRequestBuilder.ToString();
-							int index = read.IndexOf(spliter.ToString());
-							string headerstr = read.Substring(0, index);
-							header = HttpRequestHeader.Create(headerstr);
 							isHeaderRead = true;
+							string current = Encoding.UTF8.GetString(buf);
+							int index = current.IndexOf("\r\n\r\n");
+							string headerstr = current.Substring(0, index);
+							header = HttpRequestHeader.Create(headerstr);
 
-							if (header.Method == "GET") await OnGet(socket, header);
-							else
+							Debug.WriteLine("Connection Received:" + header.RequestedUrl);
+							if (header.Method == "GET") { await OnGet(socket, header); break; }
+							else if (header.Method == "POST")
 							{
 								isPost = true;
-								byte[] remained = Encoding.UTF8.GetBytes(read.Substring(index + 4));
-
-								continue;
+								var firstContentBuf = Encoding.UTF8.GetBytes(current.Substring(index + 4));
+								contentBuf = firstContentBuf;
+								Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
 							}
 						}
 
 						if (isPost)
 						{
-							await input.ReadAsync(contentBuf, dataRead, InputStreamOptions.Partial);
-							dataRead = contentBuf.Length;
+							var strs = ReadLines(contentBuf);
+							foreach (var linebytes in strs)
+							{
+								string linestr = Encoding.UTF8.GetString(linebytes);
+								if (linestr.StartsWith("--" + Boundary))
+								{
+									//判断是不是boundary
+									boundaryCount++;
+
+									if (boundaryCount != 1)
+									{
+										boundaryFlag = true;
+										contentProcessFlag = 0;
+									}
+
+									if (WriteStream != null) await WriteStream.FlushAsync();
+								}
+
+								if (contentProcessFlag == 2 || contentProcessFlag == 0 || contentProcessFlag == 3)
+								{
+									contentProcessFlag++;
+									continue;
+								}
+								else if (contentProcessFlag == 1)
+								{
+									string name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
+
+									var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
+									WriteStream = (await storageFile.OpenStreamForWriteAsync());
+
+								}
+								else if (contentProcessFlag > 3)
+								{
+									//这里有文件内容了
+									//await FileIO.WriteBytesAsync(items.Last().storageFile, Encoding.UTF8.GetBytes(line));
+									if (WriteStream != null)
+									{
+										await WriteStream.WriteAsync(linebytes, 0, linebytes.Length);
+									}
+								}
+								contentProcessFlag++;
+							}
 						}
 					}
 				}
@@ -130,9 +173,81 @@ namespace ArcShare.Server
 					Debug.WriteLine(ex.Message, "Read Input Error");
 				}
 			}
-			Debug.WriteLine("Connection Received:" + header.RequestedUrl);
 		}
 		#endregion
+
+		/// <summary>
+		/// 从buffer里读取所有的行
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <returns></returns>
+		/*
+		StringBuilder linebuf;
+		private string[] ReadLines(byte[] buffer)
+		{
+			List<string> strs = new List<string>();
+			if (linebuf == null) linebuf = new StringBuilder();
+			string bufstr = Encoding.ASCII.GetString(buffer);
+			foreach (char c in bufstr)
+			{
+				if (c == '\n')
+				{
+					linebuf.Append(c);
+					strs.Add(linebuf.ToString());
+					linebuf = new StringBuilder();
+				}
+				else
+				{
+					linebuf.Append(c);
+				}
+			}
+
+			for(int i=0;i<strs.Count;i++)
+			{
+				if (strs[i] == "\r\n" && strs[i + 1].StartsWith("--" + Boundary))
+				{
+					strs.RemoveAt(i);
+				}
+			}
+			return strs.ToArray();
+		}
+		*/
+
+		List<byte> linebuf;
+		private List<byte[]> ReadLines(byte[] buffer)
+		{
+			List<byte[]> lines = new List<byte[]>();
+			if (linebuf == null) linebuf = new List<byte>();
+			for (int i = 0; i < buffer.Length; i++)
+			{
+				linebuf.Add(buffer[i]);
+				if (buffer[i] == 0x0A)
+				{
+					lines.Add(linebuf.ToArray());
+					linebuf = new List<byte>();
+				}
+			}
+			byte[] lineBreak = new byte[] { 0x0D, 0x0A };
+			byte[] boundaryLine = Encoding.ASCII.GetBytes(Boundary);
+			for (int i = 4; i < lines.Count - 1; i++)
+			{
+				bool b1 = lines[i].ToArray() == lineBreak;
+				bool b2 = lines[i + 1].ToArray().Intersect(boundaryLine).Any();
+				if (lines[i].Length == 2 && lines[i][1] == 0x0A && Encoding.ASCII.GetString(lines[i+1]).StartsWith("--" + Boundary))
+				{
+					lines.RemoveAt(i);
+				}
+			}
+
+			List<string> list = new List<string>();
+			foreach (var arr in lines)
+			{
+				string str = Encoding.UTF8.GetString(arr);
+				list.Add(str);
+			}
+
+			return lines;
+		}
 
 		/// <summary>
 		/// 在收到GET请求时的操作

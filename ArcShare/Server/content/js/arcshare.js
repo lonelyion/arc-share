@@ -1,5 +1,6 @@
 ﻿var selected = [];
-var totalbytes = 0;
+
+console.log("ArcShare.js has been loaded");
 
 function BytesNumToString(b) {
 	var si = true;
@@ -19,15 +20,17 @@ function onFilePickerSelected() {
 	for (var i = 0; i < files.length; i++) {
 		selected.push(files[i]);
 	}
+	console.log(files.length + " files has been selected");
 	viewUpdate();
 }
 
 function viewUpdate() {
+	console.log("called viewUpdate();");
 	var table = document.getElementById("table");
 
 	$(".clickable-row").each(function () {
 		$(this).remove();
-	})
+	});
 
 	var progressBar = document.getElementById("progressbar");
 	progressBar.style.width = "0%";
@@ -37,7 +40,7 @@ function viewUpdate() {
 
 	var totalSize = 0;
 
-	if (selected.length == 0) {
+	if (selected.length === 0) {
 		return;
 	}
 
@@ -67,7 +70,7 @@ function viewUpdate() {
 			$(this).removeClass('bg-secondary');
 		else
 			$(this).addClass('bg-secondary');
-	})
+	});
 
 	totalbytes = totalSize;
 }
@@ -77,7 +80,7 @@ function onSelecteAll() {
 		if (!$(this).hasClass("bg-secondary")) {
 			$(this).addClass("bg-secondary");
 		}
-	})
+	});
 }
 
 function onDeselectAll() {
@@ -85,7 +88,7 @@ function onDeselectAll() {
 		if ($(this).hasClass("bg-secondary")) {
 			$(this).removeClass("bg-secondary");
 		}
-	})
+	});
 }
 
 jQuery.fn.reverse = [].reverse;
@@ -99,8 +102,7 @@ function onRemoveClick() {
 			console.log("after: " + selected);
 			viewUpdate();
 		}
-	})
-	
+	});
 }
 
 function startUpload() {
@@ -117,19 +119,18 @@ function startUpload() {
 	request.upload.addEventListener("progress", updateProgressChanged, false);
 
 	request.open("POST", "/up");
-	request.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-	request.send(fd);
+
+	request.send(form);
 }
 
 function updateProgressChanged(event) {
+	var progressBar = document.getElementById("progressbar");
 	if (event.lengthComputable) {
 		var percent = Math.round(event.loaded * 100 / event.total);
-		var progressBar = document.getElementById("progressbar");
 		progressBar.style.width = percent + "%";
 		progressBar.setAttribute("aria-valuenow", percent);
 		document.getElementById("percentageNum").innerHTML = percent;
 	} else {
-		var progressBar = document.getElementById("progressbar");
 		progressBar.style.width = "100%";
 		progressBar.setAttribute("aria-valuenow", 100);
 		//document.getElementById("percentageNum").innerHTML = 100;
