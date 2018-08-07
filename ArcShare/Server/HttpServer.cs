@@ -82,7 +82,7 @@ namespace ArcShare.Server
 			{
 				try
 				{
-					var buf = new byte[BufferSize];
+					var buf = Enumerable.Repeat((byte)0xFF, BufferSize).ToArray();
 					var linebuffer = new StringBuilder();
 					int count = 0;
 					bool isHeaderRead = false, isPost = false;
@@ -92,10 +92,9 @@ namespace ArcShare.Server
 					var contentBuf = new byte[BufferSize];
 					int contentProcessFlag = 0, boundaryCount = 0;
 					bool boundaryFlag = false;
-					List<MultiPartItem> items = new List<MultiPartItem>();
 					Stream WriteStream = null;
 
-					var folderToStore = await Windows.Storage.ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.OpenIfExists);
+					var folderToStore = await ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.OpenIfExists);
 					Debug.WriteLine(folderToStore.Path);
 					//var folderToStore = await Windows.Storage.DownloadsFolder.
 
@@ -105,7 +104,7 @@ namespace ArcShare.Server
 						if (!isHeaderRead && buf.Intersect(spliter).Any())
 						{
 							isHeaderRead = true;
-							string current = Encoding.UTF8.GetString(buf);
+							string current = Encoding.ASCII.GetString(buf);
 							int index = current.IndexOf("\r\n\r\n");
 							string headerstr = current.Substring(0, index);
 							header = HttpRequestHeader.Create(headerstr);
@@ -115,7 +114,7 @@ namespace ArcShare.Server
 							else if (header.Method == "POST")
 							{
 								isPost = true;
-								var firstContentBuf = Encoding.UTF8.GetBytes(current.Substring(index + 4));
+								var firstContentBuf = buf.Skip(index + 4).ToArray();
 								contentBuf = firstContentBuf;
 								Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
 							}
@@ -129,6 +128,12 @@ namespace ArcShare.Server
 								string linestr = Encoding.UTF8.GetString(linebytes);
 								if (linestr.StartsWith("--" + Boundary))
 								{
+									if (linestr == "--" + Boundary + "--")
+									{
+										break;
+										//结束了
+									}
+
 									//判断是不是boundary
 									boundaryCount++;
 
@@ -149,10 +154,9 @@ namespace ArcShare.Server
 								else if (contentProcessFlag == 1)
 								{
 									string name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
-
+									if (WriteStream != null) await WriteStream.FlushAsync();
 									var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
 									WriteStream = (await storageFile.OpenStreamForWriteAsync());
-
 								}
 								else if (contentProcessFlag > 3)
 								{
@@ -167,6 +171,11 @@ namespace ArcShare.Server
 							}
 						}
 					}
+					if (WriteStream != null)
+					{
+						await WriteStream.FlushAsync();
+						WriteStream.Dispose();
+					}
 				}
 				catch (Exception ex)
 				{
@@ -175,43 +184,6 @@ namespace ArcShare.Server
 			}
 		}
 		#endregion
-
-		/// <summary>
-		/// 从buffer里读取所有的行
-		/// </summary>
-		/// <param name="buffer"></param>
-		/// <returns></returns>
-		/*
-		StringBuilder linebuf;
-		private string[] ReadLines(byte[] buffer)
-		{
-			List<string> strs = new List<string>();
-			if (linebuf == null) linebuf = new StringBuilder();
-			string bufstr = Encoding.ASCII.GetString(buffer);
-			foreach (char c in bufstr)
-			{
-				if (c == '\n')
-				{
-					linebuf.Append(c);
-					strs.Add(linebuf.ToString());
-					linebuf = new StringBuilder();
-				}
-				else
-				{
-					linebuf.Append(c);
-				}
-			}
-
-			for(int i=0;i<strs.Count;i++)
-			{
-				if (strs[i] == "\r\n" && strs[i + 1].StartsWith("--" + Boundary))
-				{
-					strs.RemoveAt(i);
-				}
-			}
-			return strs.ToArray();
-		}
-		*/
 
 		List<byte> linebuf;
 		private List<byte[]> ReadLines(byte[] buffer)
@@ -231,11 +203,23 @@ namespace ArcShare.Server
 			byte[] boundaryLine = Encoding.ASCII.GetBytes(Boundary);
 			for (int i = 4; i < lines.Count - 1; i++)
 			{
-				bool b1 = lines[i].ToArray() == lineBreak;
-				bool b2 = lines[i + 1].ToArray().Intersect(boundaryLine).Any();
-				if (lines[i].Length == 2 && lines[i][1] == 0x0A && Encoding.ASCII.GetString(lines[i+1]).StartsWith("--" + Boundary))
+				bool b1 = Encoding.ASCII.GetString(lines[i + 1]).StartsWith("--" + Boundary);
+				if (lines[i].Length == 2 && lines[i][1] == 0x0A && b1)
 				{
 					lines.RemoveAt(i);
+				}
+			}
+			for (int i = 4; i < lines.Count - 1; i++)
+			{
+				bool b1 = Encoding.ASCII.GetString(lines[i + 1]).StartsWith("--" + Boundary);
+				if (b1)
+				{
+					int len = lines[i].Length;
+					bool b2 = (lines[i][len - 1] == 0x0A && lines[i][len - 2] == 0x0D);
+					if (b2)
+					{
+						lines[i] = lines[i].SkipLast(2).ToArray();
+					}
 				}
 			}
 
@@ -257,7 +241,7 @@ namespace ArcShare.Server
 		/// <returns></returns>
 		private async Task OnGet(StreamSocket socket, HttpRequestHeader header)
 		{
-			if (Collection.Count == 1)
+			if (Collection != null && Collection.Count == 1)
 			{ //只传一个文件就直接下载
 				var file = Collection.First().File;
 				await WriteResponseAsync(socket.OutputStream, file, HttpStatusCode.OK, true);
