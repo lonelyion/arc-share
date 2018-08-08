@@ -91,12 +91,10 @@ namespace ArcShare.Server
 
 					var contentBuf = new byte[BufferSize];
 					int contentProcessFlag = 0, boundaryCount = 0;
-					bool boundaryFlag = false;
 					Stream WriteStream = null;
 
 					var folderToStore = await ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.OpenIfExists);
 					Debug.WriteLine(folderToStore.Path);
-					//var folderToStore = await Windows.Storage.DownloadsFolder.
 
 					while ((count = input.Read(buf, 0, buf.Length)) > 0)
 					{   //从理论上来说，32kb的buffer无论如何都搞得完header
@@ -128,18 +126,17 @@ namespace ArcShare.Server
 								string linestr = Encoding.UTF8.GetString(linebytes);
 								if (linestr.StartsWith("--" + Boundary))
 								{
-									if (linestr == "--" + Boundary + "--")
+									//判断是不是boundary
+									boundaryCount++;
+
+									if (linestr.StartsWith("--" + Boundary + "--"))
 									{
 										break;
 										//结束了
 									}
 
-									//判断是不是boundary
-									boundaryCount++;
-
 									if (boundaryCount != 1)
 									{
-										boundaryFlag = true;
 										contentProcessFlag = 0;
 									}
 
@@ -161,7 +158,6 @@ namespace ArcShare.Server
 								else if (contentProcessFlag > 3)
 								{
 									//这里有文件内容了
-									//await FileIO.WriteBytesAsync(items.Last().storageFile, Encoding.UTF8.GetBytes(line));
 									if (WriteStream != null)
 									{
 										await WriteStream.WriteAsync(linebytes, 0, linebytes.Length);
@@ -344,15 +340,16 @@ namespace ArcShare.Server
 			}
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="os"></param>
-		/// <returns></returns>
+		
 		private byte[] zipheader = { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
 		//                           Signature(4bytes)       version20   flags(enable UTF8)     no-compresion
 		private byte[] cdheader = { 0x50, 0x4B, 0x01, 0x02, 0x14, 0x00, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
 		//							//Signature             Version		PKVersion	Flags		no-compression
+		/// <summary>
+		/// 把文件列表都打成ZIP包再实时将数据流输出到HTTP Response
+		/// </summary>
+		/// <param name="os"></param>
+		/// <returns></returns>
 		private async Task WriteZipResponseAsync(IOutputStream os)
 		{
 			using (var resp = os.AsStreamForWrite())
