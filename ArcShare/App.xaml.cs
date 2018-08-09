@@ -1,29 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.Core;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Microsoft.Services.Store.Engagement;
 
 namespace ArcShare
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
-    sealed partial class App : Application
+	/// <summary>
+	/// Provides application-specific behavior to supplement the default Application class.
+	/// </summary>
+	sealed partial class App : Application
     {
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -96,8 +87,27 @@ namespace ArcShare
 			viewTitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
 			viewTitleBar.ButtonForegroundColor = (Color)Resources["SystemBaseHighColor"];
 
+			//Windows Developer Dashboard Notification
+			StoreServicesEngagementManager engagementManager = StoreServicesEngagementManager.GetDefault();
+			engagementManager.RegisterNotificationChannelAsync();
 		}
 
+		protected override void OnActivated(IActivatedEventArgs args)
+		{
+			base.OnActivated(args);
+
+			if (args is ToastNotificationActivatedEventArgs)
+			{
+				var toastActivationArgs = args as ToastNotificationActivatedEventArgs;
+
+				StoreServicesEngagementManager engagementManager = StoreServicesEngagementManager.GetDefault();
+				string originalArgs = engagementManager.ParseArgumentsAndTrackAppLaunch(
+					toastActivationArgs.Argument);
+
+				// Use the originalArgs variable to access the original arguments
+				// that were passed to the app.
+			}
+		}
 
 		/// <summary>
 		/// Invoked when Navigation to a certain page fails

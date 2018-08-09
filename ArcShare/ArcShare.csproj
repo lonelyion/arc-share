@@ -116,6 +116,9 @@
     <Compile Include="Pages\RunningPage.xaml.cs">
       <DependentUpon>RunningPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\SendPage.xaml.cs">
+      <DependentUpon>SendPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Server\ArcExtra.cs" />
     <Compile Include="Server\HttpRequest.cs" />
     <Compile Include="Server\HttpServer.cs" />
@@ -137,6 +140,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="Assets\desktop_empty.png" />
     <Content Include="Assets\ColoredLogo.png" />
     <Content Include="Assets\LargeTile.scale-100.png" />
     <Content Include="Assets\LargeTile.scale-125.png" />
@@ -325,6 +329,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Pages\RunningPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\SendPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

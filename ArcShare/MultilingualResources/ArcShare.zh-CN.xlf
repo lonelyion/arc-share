@@ -62,17 +62,9 @@ If you continue catching this error, please contact the developer.</source>
           <source>Clear Selection</source>
           <target state="translated">清空选项</target>
         </trans-unit>
-        <trans-unit id="ButtonRemove" translate="yes" xml:space="preserve">
-          <source>Remove Selected</source>
-          <target state="translated">删除选定项</target>
-        </trans-unit>
         <trans-unit id="ButtonSelectAll.Label" translate="yes" xml:space="preserve">
           <source>Select All</source>
           <target state="translated">选择全部</target>
-        </trans-unit>
-        <trans-unit id="ButtonSend" translate="yes" xml:space="preserve">
-          <source>Send</source>
-          <target state="translated">发送</target>
         </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>Cancel</source>
@@ -216,11 +208,55 @@ If you continue catching this error, please contact the developer.</source>
         </trans-unit>
         <trans-unit id="DescriptionShort" translate="yes" xml:space="preserve">
           <source>Offering you a quick, offline file sharing between any platforms.</source>
-          <target state="new">Offering you a quick, offline file sharing between any platforms.</target>
+          <target state="translated">一个跨平台、离线的文件共享应用。</target>
         </trans-unit>
         <trans-unit id="GetFromMicrosoft" translate="yes" xml:space="preserve">
           <source>Get Arc Share from Microsoft Store</source>
-          <target state="new">Get Arc Share from Microsoft Store</target>
+          <target state="translated">从微软商店获取Arc Share</target>
+        </trans-unit>
+        <trans-unit id="FeedbackButton.Content" translate="yes" xml:space="preserve">
+          <source>Feedback</source>
+          <target state="translated">反馈</target>
+        </trans-unit>
+        <trans-unit id="FilesHistory.Text" translate="yes" xml:space="preserve">
+          <source>Files History</source>
+          <target state="translated">文件历史</target>
+        </trans-unit>
+        <trans-unit id="ButtonRemove.Label" translate="yes" xml:space="preserve">
+          <source>Remove Selected</source>
+          <target state="translated">删除选中</target>
+        </trans-unit>
+        <trans-unit id="ButtonSend.Label" translate="yes" xml:space="preserve">
+          <source>Send</source>
+          <target state="translated">发送</target>
+        </trans-unit>
+        <trans-unit id="BrowseFiles" translate="yes" xml:space="preserve">
+          <source>Browse Files</source>
+          <target state="translated">浏览文件</target>
+        </trans-unit>
+        <trans-unit id="CancelSelection" translate="yes" xml:space="preserve">
+          <source>Clear Selection</source>
+          <target state="translated">取消选择</target>
+        </trans-unit>
+        <trans-unit id="FileList" translate="yes" xml:space="preserve">
+          <source>File List</source>
+          <target state="translated">文件列表</target>
+        </trans-unit>
+        <trans-unit id="Progress" translate="yes" xml:space="preserve">
+          <source>Progress</source>
+          <target state="translated">进度</target>
+        </trans-unit>
+        <trans-unit id="RemoveSelected" translate="yes" xml:space="preserve">
+          <source>Remove Selected</source>
+          <target state="translated">删除选中</target>
+        </trans-unit>
+        <trans-unit id="SelectAll" translate="yes" xml:space="preserve">
+          <source>Select All</source>
+          <target state="translated">选择全部</target>
+        </trans-unit>
+        <trans-unit id="Send" translate="yes" xml:space="preserve">
+          <source>Send</source>
+          <target state="translated">发送</target>
         </trans-unit>
       </group>
     </body>

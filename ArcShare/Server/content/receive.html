@@ -192,8 +192,8 @@
 				<thead class="thead-light">
 					<tr>
 						<th scope="col">#</th>
-						<th scope="col">文件列表</th>
-						<th scope="col">大小</th>
+						<th scope="col">[FileList]</th>
+						<th scope="col">[Size]</th>
 					</tr>
 				</thead>
 				<tbody></tbody>
@@ -201,7 +201,7 @@
 		</div>
 		<div class="row">
 			<div class="col-md-auto">
-				<p style="margin-top: 10px;">进度 <span id="percentageNum">25</span>%</p>
+				<p style="margin-top: 10px;">[Progress] <span id="percentageNum">25</span>%</p>
 			</div>
 			<div class="col">
 				<div class="progress progress-fluent my-3 ">
@@ -211,14 +211,14 @@
 		</div>
 		<div class="row" style="padding-top: 1.3rem;">
 			<div class="col">
-				<span class="btn btn-info btn-file">浏览文件<input id="filePicker" type="file" onchange="javascript: onFilePickerSelected();" multiple="multiple" /></span>
-				<button type="button" class="btn btn-secondary" onclick="onSelecteAll();">选择全部</button>
-				<button type="button" class="btn btn-secondary" onclick="onDeselectAll();">取消选择</button>
-				<button type="button" class="btn btn-danger" onclick="onRemoveClick();">删除选中</button>
+				<span class="btn btn-info btn-file">[BrowseFiles]<input id="filePicker" type="file" onchange="javascript: onFilePickerSelected();" multiple="multiple" /></span>
+				<button type="button" class="btn btn-secondary" onclick="onSelecteAll();">[SelectAll]</button>
+				<button type="button" class="btn btn-secondary" onclick="onDeselectAll();">[CancelSelection]</button>
+				<button type="button" class="btn btn-danger" onclick="onRemoveClick();">[RemoveSelected]</button>
 			</div>
 			<button id="sendbtn" type="button" class="btn btn-primary float-lg-left" data-toggle="tooltip" data-placement="bottom"
-					title="发送列表中的所有文件到主机" onclick="startUpload();">
-				<i class="mi mi-Send"></i> 发送
+					title="[SendAllFilesInTheList]" onclick="startUpload();">
+				<i class="mi mi-Send"></i> [Send]
 			</button>
 		</div>
 	</main>
@@ -233,7 +233,7 @@
 					<!-- Content -->
 					<h5 class="text-uppercase">Arc Share</h5>
 					<p class="text-muted">
-						Offering you a quick, offline file sharing between any platforms.
+						[DescriptionShort]
 						<br />Made with &hearts; by Copper
 					</p>
 				</div>
@@ -241,7 +241,7 @@
 		</div>
 		<div class="footer-copyright text-center py-3">
 			<span>
-				<a href="https://www.microsoft.com/store/apps/9MZ51ZV006J8?ocid=badge" target="_blank">Get Arc Share from Microsoft Store</a>
+				<a href="https://www.microsoft.com/store/apps/9MZ51ZV006J8?ocid=badge" target="_blank">[GetFromMicrosoft]</a>
 			</span>
 			<span>
 				| © 2018 Copyright

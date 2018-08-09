@@ -157,13 +157,13 @@ If you continue catching this error, please contact the developer.</value>
   <data name="ButtonClear.Label" xml:space="preserve">
     <value>Clear Selection</value>
   </data>
-  <data name="ButtonRemove" xml:space="preserve">
+  <data name="ButtonRemove.Label" xml:space="preserve">
     <value>Remove Selected</value>
   </data>
   <data name="ButtonSelectAll.Label" xml:space="preserve">
     <value>Select All</value>
   </data>
-  <data name="ButtonSend" xml:space="preserve">
+  <data name="ButtonSend.Label" xml:space="preserve">
     <value>Send</value>
   </data>
   <data name="Cancel" xml:space="preserve">
@@ -276,5 +276,32 @@ If you continue catching this error, please contact the developer.</value>
   </data>
   <data name="GetFromMicrosoft" xml:space="preserve">
     <value>Get Arc Share from Microsoft Store</value>
+  </data>
+  <data name="FeedbackButton.Content" xml:space="preserve">
+    <value>Feedback</value>
+  </data>
+  <data name="FilesHistory.Text" xml:space="preserve">
+    <value>Files History</value>
+  </data>
+  <data name="BrowseFiles" xml:space="preserve">
+    <value>Browse Files</value>
+  </data>
+  <data name="CancelSelection" xml:space="preserve">
+    <value>Clear Selection</value>
+  </data>
+  <data name="FileList" xml:space="preserve">
+    <value>File List</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>Progress</value>
+  </data>
+  <data name="RemoveSelected" xml:space="preserve">
+    <value>Remove Selected</value>
+  </data>
+  <data name="SelectAll" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
   </data>
 </root>

@@ -47,7 +47,7 @@ namespace ArcShare
 			get
 			{
 				if (localSettings.Values["theme"] == null) return null;
-				switch(localSettings.Values["theme"].ToString())
+				switch (localSettings.Values["theme"].ToString())
 				{
 					case "light":
 						return ApplicationTheme.Light;
@@ -58,7 +58,7 @@ namespace ArcShare
 			}
 			set
 			{
-				switch(value)
+				switch (value)
 				{
 					case ApplicationTheme.Light:
 						localSettings.Values["theme"] = "light";
@@ -91,6 +91,18 @@ namespace ArcShare
 			{
 				localSettings.Values["lang"] = value;
 				Windows.ApplicationModel.Resources.Core.ResourceContext.SetGlobalQualifierValue("Language", value);
+			}
+		}
+
+		public static ushort PreferredPort
+		{
+			get
+			{
+				if (localSettings.Values["port"] == null) return 4000;
+				else return Convert.ToUInt16(localSettings.Values["port"]);
+			}
+			set {
+				localSettings.Values["port"] = value;
 			}
 		}
 	}

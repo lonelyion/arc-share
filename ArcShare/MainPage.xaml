@@ -17,91 +17,10 @@
 				<Frame x:Name="homeFrame" />
 			</PivotItem>
 			<PivotItem x:Uid="SendPItem" Header="Send">
-				<Grid x:Name="grid" Background="{ThemeResource SystemControlAcrylicWindowBrush}">
-					<Grid.RowDefinitions>
-						<RowDefinition x:Name="row0" Height="*" />
-						<RowDefinition x:Name="row1" Height="Auto" />
-					</Grid.RowDefinitions>
-					<Grid x:Name="panel">
-						<ListView
-							x:Name="fileListView"
-							IsMultiSelectCheckBoxEnabled="False"
-							ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-							ScrollViewer.VerticalScrollBarVisibility="Auto"
-							ScrollViewer.VerticalScrollMode="Auto"
-							SelectionMode="Multiple">
-							<ListView.Header>
-								<TextBlock
-									x:Uid="ChooseItems"
-									Style="{ThemeResource SubtitleTextBlockStyle}"
-									Text="Choose Items" />
-							</ListView.Header>
-							<ListView.ItemTemplate>
-								<DataTemplate x:Name="FileListItemDataTemplate" x:DataType="root:FileItem">
-									<StackPanel
-										x:Name="stackPanel"
-										VerticalAlignment="Center"
-										Orientation="Horizontal">
-										<Image
-											x:Name="fileIconImage"
-											Width="32"
-											Height="32"
-											HorizontalAlignment="Center"
-											VerticalAlignment="Center"
-											Source="{x:Bind IconX, Mode=TwoWay}"
-											Stretch="Uniform" />
-										<TextBlock
-											Margin="3,0,0,0"
-											VerticalAlignment="Center"
-											Text="{x:Bind FullName}" />
-									</StackPanel>
-								</DataTemplate>
-							</ListView.ItemTemplate>
-						</ListView>
-					</Grid>
-
-					<CommandBar
-						x:Name="commands"
-						Grid.Row="1"
-						Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
-						OverflowButtonVisibility="Visible">
-						<AppBarButton
-							x:Name="addButton"
-							x:Uid="ButtonAdd"
-							Click="addButton_Click"
-							Icon="Add"
-							Label="Add" />
-						<AppBarSeparator />
-						<AppBarButton
-							x:Name="selectAllButton"
-							x:Uid="ButtonSelectAll"
-							Click="selectAllButton_Click"
-							Icon="SelectAll"
-							Label="Select All" />
-						<AppBarButton
-							x:Name="clearButton"
-							x:Uid="ButtonClear"
-							Click="clearSelectionButton_Click"
-							Icon="ClearSelection"
-							Label="Clear Selection" />
-						<AppBarButton
-							x:Name="deleteButton"
-							x:Uid="ButtonRemove"
-							Click="deleteButton_Click"
-							Icon="Delete"
-							Label="Remove Selected" />
-						<AppBarSeparator />
-						<AppBarButton
-							x:Name="sendButton"
-							x:Uid="ButtonSend"
-							Click="sendButton_Click"
-							Icon="Send"
-							Label="Send" />
-					</CommandBar>
-				</Grid>
+				<p:SendPage x:Name="sendPage" />
 			</PivotItem>
 			<PivotItem x:Uid="ReceivePItem" Header="Receive">
-				<Frame x:Name="receiveFrame" />
+				<p:ReceivePage x:Name="receivePage" />
 			</PivotItem>
 			<PivotItem x:Uid="SettingsPItem" Header="Settings">
 				<Frame x:Name="settingsFrame" />

@@ -49,14 +49,8 @@
   <data name="ButtonClear.Label" xml:space="preserve">
     <value>清空选项</value>
   </data>
-  <data name="ButtonRemove" xml:space="preserve">
-    <value>删除选定项</value>
-  </data>
   <data name="ButtonSelectAll.Label" xml:space="preserve">
     <value>选择全部</value>
-  </data>
-  <data name="ButtonSend" xml:space="preserve">
-    <value>发送</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
@@ -162,5 +156,44 @@
   </data>
   <data name="SwitchToStart.Text" xml:space="preserve">
     <value>选择 发送/接收 来开始使用</value>
+  </data>
+  <data name="DescriptionShort" xml:space="preserve">
+    <value>一个跨平台、离线的文件共享应用。</value>
+  </data>
+  <data name="GetFromMicrosoft" xml:space="preserve">
+    <value>从微软商店获取Arc Share</value>
+  </data>
+  <data name="FeedbackButton.Content" xml:space="preserve">
+    <value>反馈</value>
+  </data>
+  <data name="FilesHistory.Text" xml:space="preserve">
+    <value>文件历史</value>
+  </data>
+  <data name="ButtonRemove.Label" xml:space="preserve">
+    <value>删除选中</value>
+  </data>
+  <data name="ButtonSend.Label" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="BrowseFiles" xml:space="preserve">
+    <value>浏览文件</value>
+  </data>
+  <data name="CancelSelection" xml:space="preserve">
+    <value>取消选择</value>
+  </data>
+  <data name="FileList" xml:space="preserve">
+    <value>文件列表</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>进度</value>
+  </data>
+  <data name="RemoveSelected" xml:space="preserve">
+    <value>删除选中</value>
+  </data>
+  <data name="SelectAll" xml:space="preserve">
+    <value>选择全部</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>发送</value>
   </data>
 </root>

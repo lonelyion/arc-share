@@ -72,112 +72,6 @@ namespace ArcShare.Server
 		{
 			StatusChanged?.Invoke(this, args);
 		}
-		private async void SocketListener_ConnectionReceived_Back(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
-		{
-			StreamSocket socket = args.Socket;
-			StringBuilder httpRequestBuilder = new StringBuilder();
-			//读取输入数据流
-			using (var input = socket.InputStream.AsStreamForRead())
-			{
-				try
-				{
-					var buf = Enumerable.Repeat((byte)0xFF, BufferSize).ToArray();
-					var linebuffer = new StringBuilder();
-					int count = 0;
-					bool isHeaderRead = false, isPost = false;
-					byte[] spliter = Encoding.ASCII.GetBytes("\r\n\r\n");
-					HttpRequestHeader header = new HttpRequestHeader();
-
-					var contentBuf = new byte[BufferSize];
-					int contentProcessFlag = 0, boundaryCount = 0;
-					Stream WriteStream = null;
-
-					var folderToStore = await ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.OpenIfExists);
-					Debug.WriteLine(folderToStore.Path);
-
-					while ((count = input.Read(buf, 0, buf.Length)) > 0)
-					{   //从理论上来说，32kb的buffer无论如何都搞得完header
-						contentBuf = buf;
-						if (!isHeaderRead && buf.Intersect(spliter).Any())
-						{
-							isHeaderRead = true;
-							string current = Encoding.ASCII.GetString(buf);
-							int index = current.IndexOf("\r\n\r\n");
-							string headerstr = current.Substring(0, index);
-							header = HttpRequestHeader.Create(headerstr);
-
-							Debug.WriteLine("Connection Received:" + header.RequestedUrl);
-							if (header.Method == "GET") { await OnGet(socket, header); break; }
-							else if (header.Method == "POST")
-							{
-								isPost = true;
-								var firstContentBuf = buf.Skip(index + 4).ToArray();
-								contentBuf = firstContentBuf;
-								Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
-							}
-						}
-
-						if (isPost)
-						{
-							var strs = ReadLines(contentBuf);
-							foreach (var linebytes in strs)
-							{
-								string linestr = Encoding.UTF8.GetString(linebytes);
-								if (linestr.StartsWith("--" + Boundary))
-								{
-									//判断是不是boundary
-									boundaryCount++;
-
-									if (linestr.StartsWith("--" + Boundary + "--"))
-									{
-										break;
-										//结束了
-									}
-
-									if (boundaryCount != 1)
-									{
-										contentProcessFlag = 0;
-									}
-
-									if (WriteStream != null) await WriteStream.FlushAsync();
-								}
-
-								if (contentProcessFlag == 2 || contentProcessFlag == 0 || contentProcessFlag == 3)
-								{
-									contentProcessFlag++;
-									continue;
-								}
-								else if (contentProcessFlag == 1)
-								{
-									string name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
-									if (WriteStream != null) await WriteStream.FlushAsync();
-									var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
-									WriteStream = (await storageFile.OpenStreamForWriteAsync());
-								}
-								else if (contentProcessFlag > 3)
-								{
-									//这里有文件内容了
-									if (WriteStream != null)
-									{
-										await WriteStream.WriteAsync(linebytes, 0, linebytes.Length);
-									}
-								}
-								contentProcessFlag++;
-							}
-						}
-					}
-					if (WriteStream != null)
-					{
-						await WriteStream.FlushAsync();
-						WriteStream.Dispose();
-					}
-				}
-				catch (Exception ex)
-				{
-					Debug.WriteLine(ex.Message, "Read Input Error");
-				}
-			}
-		}
 
 		private async void SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
 		{
@@ -260,6 +154,11 @@ namespace ArcShare.Server
 								if (name == "4E69DE01-D335-46F3-A43D-B905BB2C81CA.arc")
 								{
 									EndFlag = true;
+
+									await WriteResponseAsync(socket.OutputStream,
+										await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content/receive.html")),
+										HttpStatusCode.OK, false);
+
 									break;
 								}
 
@@ -709,8 +608,17 @@ namespace ArcShare.Server
 		/// </summary>
 		public async void Start()
 		{
-			await socketListener.BindServiceNameAsync(Port.ToString());
-			Debug.WriteLine(string.Format("HTTP Server is running at {0}", ServerAddress));
+			try
+			{
+				await socketListener.BindServiceNameAsync(Port.ToString());
+				Debug.WriteLine(string.Format("HTTP Server is running at {0}", ServerAddress));
+				return;
+			}
+			catch(System.Runtime.InteropServices.COMException)
+			{
+				Port++;
+				Start();
+			}
 		}
 
 		/// <summary>

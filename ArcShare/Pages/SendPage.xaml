@@ -1,5 +1,5 @@
 ﻿<Page
-	x:Class="ArcShare.Pages.ReceivePage"
+	x:Class="ArcShare.Pages.SendPage"
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -8,14 +8,13 @@
 	xmlns:root="using:ArcShare"
 	mc:Ignorable="d">
 
-	<Grid Margin="0,0,0,0" Background="{ThemeResource SystemControlAcrylicWindowBrush}">
+	<Grid x:Name="grid" Background="{ThemeResource SystemControlAcrylicWindowBrush}">
 		<Grid.RowDefinitions>
-			<RowDefinition Height="*" />
-			<RowDefinition Height="Auto" />
+			<RowDefinition x:Name="row0" Height="*" />
+			<RowDefinition x:Name="row1" Height="Auto" />
 		</Grid.RowDefinitions>
-
 		<Grid x:Name="panel">
-			<Grid Canvas.ZIndex="1">
+			<Grid>
 				<ListView
 					x:Name="fileListView"
 					IsMultiSelectCheckBoxEnabled="False"
@@ -25,9 +24,9 @@
 					SelectionMode="Multiple">
 					<ListView.Header>
 						<TextBlock
-							x:Uid="FilesHistory"
+							x:Uid="ChooseItems"
 							Style="{ThemeResource SubtitleTextBlockStyle}"
-							Text="Files History" />
+							Text="Choose Items" />
 					</ListView.Header>
 					<ListView.ItemTemplate>
 						<DataTemplate x:Name="FileListItemDataTemplate" x:DataType="root:FileItem">
@@ -52,7 +51,6 @@
 					</ListView.ItemTemplate>
 				</ListView>
 			</Grid>
-
 			<Grid
 				x:Name="EmptyStateGrid"
 				HorizontalAlignment="Center"
@@ -60,17 +58,48 @@
 				Canvas.ZIndex="5">
 				<StackPanel>
 					<Image MaxWidth="500" Source="/Assets/desktop_empty.png" />
-					<TextBlock HorizontalAlignment="Center" Text="w(ﾟДﾟ)w 糟糕，还没有接收文件的记录，点击下方开始按钮接收吧" />
+					<TextBlock HorizontalAlignment="Center" Text="w(ﾟДﾟ)w 糟糕，还没有选择文件呢！点击下方按钮选择要分享的文件吧！" />
 				</StackPanel>
 			</Grid>
 		</Grid>
 
-		<CommandBar Grid.Row="1">
+		<CommandBar
+			x:Name="commands"
+			Grid.Row="1"
+			Background="{ThemeResource SystemControlAcrylicElementMediumHighBrush}"
+			OverflowButtonVisibility="Visible">
 			<AppBarButton
-				x:Name="startButton"
-				Click="startButton_Click"
+				x:Name="addButton"
+				x:Uid="ButtonAdd"
+				Click="addButton_Click"
+				Icon="Add"
+				Label="Add" />
+			<AppBarSeparator />
+			<AppBarButton
+				x:Name="selectAllButton"
+				x:Uid="ButtonSelectAll"
+				Click="selectAllButton_Click"
+				Icon="SelectAll"
+				Label="Select All" />
+			<AppBarButton
+				x:Name="clearButton"
+				x:Uid="ButtonClear"
+				Click="clearSelectionButton_Click"
+				Icon="ClearSelection"
+				Label="Clear Selection" />
+			<AppBarButton
+				x:Name="deleteButton"
+				x:Uid="ButtonRemove"
+				Click="deleteButton_Click"
+				Icon="Delete"
+				Label="Remove Selected" />
+			<AppBarSeparator />
+			<AppBarButton
+				x:Name="sendButton"
+				x:Uid="ButtonSend"
+				Click="sendStartButton_Click"
 				Icon="Send"
-				Label="Start" />
+				Label="Send" />
 		</CommandBar>
 	</Grid>
 </Page>

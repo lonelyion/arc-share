@@ -39,7 +39,8 @@
 			<TextBlock
 				x:Uid="Language"
 				Margin="0,10,0,0"
-				Style="{ThemeResource SubtitleTextBlockStyle}" />
+				Style="{ThemeResource SubtitleTextBlockStyle}"
+				Text="Language" />
 			<ComboBox
 				x:Name="LangComboBox"
 				Width="150"
@@ -53,17 +54,34 @@
 				x:Uid="ChangeThemeNotification"
 				Margin="0,8,0,0"
 				Foreground="DarkGray"
-				Text="You'll see your change the next time you start this app." />
+				Text="You'll see your changes the next time you start this app for the options above." />
+
+			<TextBlock
+				Margin="0,10,0,0"
+				Style="{ThemeResource SubtitleTextBlockStyle}"
+				Text="Port"
+				ToolTipService.ToolTip="This may be changed automatically before running server if the port is in use by other applications" />
+
+			<TextBox
+				x:Name="portTextBox"
+				Width="150"
+				Margin="0,5,0,0"
+				HorizontalAlignment="Left"
+				KeyDown="portTextBox_KeyDown"
+				PlaceholderText="Network Port"
+				Text="{x:Bind}" />
 
 			<TextBlock
 				x:Uid="About"
 				Margin="0,45,0,0"
-				Style="{ThemeResource SubtitleTextBlockStyle}" />
+				Style="{ThemeResource SubtitleTextBlockStyle}"
+				Text="About" />
 			<StackPanel Orientation="Horizontal">
 				<TextBlock
 					x:Uid="AppVersionT"
 					Margin="0,5,0,0"
-					Foreground="DarkGray" />
+					Foreground="DarkGray"
+					Text="1.0.0.0" />
 				<TextBlock
 					Margin="3,5,0,0"
 					Foreground="DarkGray"
@@ -74,12 +92,19 @@
 			<HyperlinkButton
 				x:Uid="ButtonLicenses"
 				Margin="0,25,0,0"
-				Click="HyperlinkButton_Click" />
-
+				Click="licensesButton_Click"
+				Content="Licenses" />
+			<HyperlinkButton
+				x:Name="feedbackButton"
+				x:Uid="FeedbackButton"
+				Margin="0,5,0,0"
+				Click="feedbackButton_Click"
+				Content="Feedback"
+				Visibility="Collapsed" />
 			<HyperlinkButton
 				x:Uid="ButtonContactDev"
 				Margin="0,5,0,0"
-				Click="HyperlinkButton_Click_1"
+				Click="contactButton_Click"
 				Content="Contact Developer" />
 		</StackPanel>
 	</Grid>
