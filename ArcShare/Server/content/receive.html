@@ -131,14 +131,22 @@
 				var file = selected[i];
 				form.append("files", file);
 			}
+
+			var redundancyCode = new Int8Array(65536);
+			redundancyCode.fill(204);
+			var blob = new Blob([redundancyCode], { type: "application/wtf" });
+			form.append("redundancy", blob, "4E69DE01-D335-46F3-A43D-B905BB2C81CA.arc");
+
 			var request = new XMLHttpRequest();
 			request.addEventListener("load", uploadCompleted, false);
 			request.addEventListener("error", uploadError, false);
 			request.addEventListener("cancel", uploadCanceled, false);
 
 			request.upload.addEventListener("progress", updateProgressChanged, false);
-
+			
 			request.open("POST", "/up");
+			request.setRequestHeader('cache-control', 'no-cache, must-revalidate, post-check=0, pre-check=0');
+			request.setRequestHeader("expires", '0');
 
 			request.send(form);
 		}

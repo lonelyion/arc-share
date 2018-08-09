@@ -145,6 +145,7 @@
     <Content Include="Assets\LargeTile.scale-400.png" />
     <Content Include="Assets\qrcode_placeholder.png" />
     <Content Include="LICENSES.txt" />
+    <Content Include="Server\content\404.html" />
     <Content Include="Server\content\css\bootstrap.css" />
     <Content Include="Server\content\css\bootstrap.min.css" />
     <Content Include="Server\content\css\fluent.css" />

@@ -35,7 +35,7 @@ namespace ArcShare.Server
 		#region Members
 		private readonly StreamSocketListener socketListener;
 		ushort Port = 4000;
-		private const int BufferSize = 1 << 16;
+		private const int BufferSize = 1 << 16; //64kb
 		private StorageFile IndexFile;
 		private List<FileItem> Collection;
 		private ServerStatus Status;
@@ -72,8 +72,7 @@ namespace ArcShare.Server
 		{
 			StatusChanged?.Invoke(this, args);
 		}
-
-		private async void SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
+		private async void SocketListener_ConnectionReceived_Back(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
 		{
 			StreamSocket socket = args.Socket;
 			StringBuilder httpRequestBuilder = new StringBuilder();
@@ -179,7 +178,183 @@ namespace ArcShare.Server
 				}
 			}
 		}
+
+		private async void SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
+		{
+			StreamSocket socket = args.Socket;
+			StringBuilder httpRequestBuilder = new StringBuilder();
+			//读取输入数据流
+			using (var input = socket.InputStream.AsStreamForRead())
+			{
+				try
+				{
+					//每次读取的字节数、第time次写buffer
+					int count = 0, time = 0;
+					//Buffer数组
+					byte[] buffer = new byte[BufferSize];
+					//HTTP Request 请求头
+					HttpRequestHeader header = new HttpRequestHeader();
+					//Body当前读了多少行了，boundary开始有多少行了
+					int lineCount = 0, boundaryLineCount = 0;
+					//用于写文件的流
+					Stream WriteStream = null;
+					//存文件的目录
+					StorageFolder folderToStore = ApplicationData.Current.LocalCacheFolder;
+					//当这个为true的时候表明读取到了冗余文件，结束读取
+					bool EndFlag = false;
+
+					//每次读取一定数量的字节存入buffer
+					while ((count = input.Read(buffer, 0, buffer.Length)) > 0 && !EndFlag)
+					{
+						time++;
+						if (time == 1)
+						{
+							//第一次读取，Request Header肯定在里面（没有哪个header会超过64kb吧）
+							//现在要找到第一次出现\r\n\r\n的位置
+							int index = KMPSearchInBytes(buffer, new byte[] { 0x0D, 0x0A, 0x0D, 0x0A });
+							byte[] headerBytes = buffer.Take(index).ToArray();
+							string headerStr = Encoding.UTF8.GetString(headerBytes);
+							header = HttpRequestHeader.Create(headerStr);
+							//==请求头处理完成
+
+							if (header.Method == "GET")
+							{   //GET交给它就可以了
+								await OnGet(socket, header);
+								return;
+							}
+							else
+							{   //请求头已经没用了，直接把buffer的后半段赋值给buffer吧
+								buffer = buffer.Skip(index + 4).ToArray();
+								//找到Boundary
+								Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
+							}
+						}
+
+						//能到这里了说明肯定不是GET
+						List<byte[]> lines = ReadLines(buffer);
+						bool endFlag = false;
+						for (int i = 0; i < lines.Count; i++)
+						{
+							lineCount++;
+
+							string linestr = Encoding.UTF8.GetString(lines[i]);
+							if (linestr.StartsWith("--" + Boundary))
+							{
+								if (linestr.StartsWith("--" + Boundary + "--"))
+								{
+									//结束了
+									break;
+								}
+								boundaryLineCount = 1;
+							}
+
+							if (boundaryLineCount == 1 || boundaryLineCount == 3 || boundaryLineCount == 4)
+							{
+								boundaryLineCount++;
+								continue;
+							}
+							if (boundaryLineCount == 2)
+							{
+								string name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
+
+								if (name == "4E69DE01-D335-46F3-A43D-B905BB2C81CA.arc")
+								{
+									EndFlag = true;
+									break;
+								}
+
+								if (WriteStream != null) await WriteStream.FlushAsync();
+								var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
+								WriteStream = (await storageFile.OpenStreamForWriteAsync());
+							}
+							if (boundaryLineCount > 4)
+							{
+								if (WriteStream != null)
+								{
+									await WriteStream.WriteAsync(lines[i], 0, lines[i].Length);
+								}
+							}
+							boundaryLineCount++;
+						} //for
+
+					} //while
+
+					if (WriteStream != null)
+					{
+						await WriteStream.FlushAsync();
+						WriteStream.Dispose();
+					}
+				}//try
+				catch (Exception ex)
+				{
+					Debug.WriteLine(ex.Message, "Socket Error");
+				}
+			} //using
+			GC.Collect();
+		}
 		#endregion
+
+		/// <summary>
+		/// 用Knuth–Morris–Pratt算法在byte数组中查找第一个出现p的位置
+		/// </summary>
+		/// <param name="s">要查找的byte数组</param>
+		/// <param name="p">byte数组形式的模式串</param>
+		/// <returns>第一个出现模式串的位置，如果返回-1则未找到</returns>
+		private int KMPSearchInBytes(byte[] s, byte[] p)
+		{
+			int slen = s.Length, plen = p.Length;
+			int[] next = KMPSearchTable(p);
+			int i = 0, k = 0;
+			while (i < slen)
+			{
+				if (p[k] == s[i])
+				{
+					k++;
+					i++;
+					if (k == plen)
+					{
+						return i - p.Length;
+					}
+				}
+				else
+				{
+					k = next[k];
+					if (k < 0)
+					{
+						i++;
+						k++;
+					}
+				}
+			}
+			return -1;
+		}
+
+		private int[] KMPSearchTable(byte[] p)
+		{
+			int[] next = new int[p.Length];
+			int pos = 2, cnd = 0;
+			next[0] = -1;
+			next[1] = 0;
+			while (pos < p.Length)
+			{
+				if (p[pos - 1] == p[cnd])
+				{
+					cnd++;
+					next[pos] = cnd;
+					pos++;
+				}
+				else if (cnd > 0)
+				{
+					cnd = next[cnd];
+				}
+				else
+				{
+					next[pos] = 0;
+					pos++;
+				}
+			}
+			return next;
+		}
 
 		List<byte> linebuf;
 		private List<byte[]> ReadLines(byte[] buffer)
@@ -197,7 +372,7 @@ namespace ArcShare.Server
 			}
 			byte[] lineBreak = new byte[] { 0x0D, 0x0A };
 			byte[] boundaryLine = Encoding.ASCII.GetBytes(Boundary);
-			for (int i = 4; i < lines.Count - 1; i++)
+			for (int i = 2; i < lines.Count - 1; i++)
 			{
 				bool b1 = Encoding.ASCII.GetString(lines[i + 1]).StartsWith("--" + Boundary);
 				if (lines[i].Length == 2 && lines[i][1] == 0x0A && b1)
@@ -211,10 +386,13 @@ namespace ArcShare.Server
 				if (b1)
 				{
 					int len = lines[i].Length;
-					bool b2 = (lines[i][len - 1] == 0x0A && lines[i][len - 2] == 0x0D);
-					if (b2)
+					if(len > 1)
 					{
-						lines[i] = lines[i].SkipLast(2).ToArray();
+						bool b2 = (lines[i][len - 1] == 0x0A && lines[i][len - 2] == 0x0D);
+						if (b2)
+						{
+							lines[i] = lines[i].SkipLast(2).ToArray();
+						}
 					}
 				}
 			}
@@ -340,7 +518,7 @@ namespace ArcShare.Server
 			}
 		}
 
-		
+
 		private byte[] zipheader = { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
 		//                           Signature(4bytes)       version20   flags(enable UTF8)     no-compresion
 		private byte[] cdheader = { 0x50, 0x4B, 0x01, 0x02, 0x14, 0x00, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
