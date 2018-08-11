@@ -1,13 +1,10 @@
 ﻿using ArcShare.Server;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Resources;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -98,13 +95,15 @@ namespace ArcShare
 		{
 			get
 			{
-				if (localSettings.Values["port"] == null) return 4000;
+				if (localSettings.Values["port"] == null) return 8000;
 				else return Convert.ToUInt16(localSettings.Values["port"]);
 			}
 			set {
 				localSettings.Values["port"] = value;
 			}
 		}
+
+		public static StorageFolder ReceiveFolder { get; set; }
 	}
 
 	public class FileItem

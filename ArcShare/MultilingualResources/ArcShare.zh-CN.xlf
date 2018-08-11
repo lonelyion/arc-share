@@ -258,6 +258,10 @@ If you continue catching this error, please contact the developer.</source>
           <source>Send</source>
           <target state="translated">发送</target>
         </trans-unit>
+        <trans-unit id="PortRangeWarning" translate="yes" xml:space="preserve">
+          <source>Port number must range from 7000 to 65535 in terms of security issue.</source>
+          <target state="new">Port number must range from 7000 to 65535 in terms of security issue.</target>
+        </trans-unit>
       </group>
     </body>
   </file>

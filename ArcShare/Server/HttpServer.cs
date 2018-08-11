@@ -12,6 +12,7 @@ using System.IO;
 using Windows.Storage;
 using Windows.Networking.Connectivity;
 using Windows.UI.Xaml.Controls;
+using Windows.Storage.AccessCache;
 
 namespace ArcShare.Server
 {
@@ -93,7 +94,10 @@ namespace ArcShare.Server
 					//用于写文件的流
 					Stream WriteStream = null;
 					//存文件的目录
-					StorageFolder folderToStore = ApplicationData.Current.LocalCacheFolder;
+					StorageFolder folderToStore;
+					if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
+					else folderToStore = await DownloadsFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.GenerateUniqueName);
+
 					//当这个为true的时候表明读取到了冗余文件，结束读取
 					bool EndFlag = false;
 

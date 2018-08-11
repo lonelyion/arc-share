@@ -140,7 +140,7 @@ namespace ArcShare.Pages
 			AppSettings.FileCollection = fileListView.Items.Cast<FileItem>().ToList();
 
 			//Create Server
-			HttpServer server = new HttpServer(4000, indexGenerateFile, fileListView.Items);
+			HttpServer server = new HttpServer(AppSettings.PreferredPort, indexGenerateFile, fileListView.Items);
 			AppSettings.CurrentServer = server;
 
 			this.MainFrame.Navigate(typeof(RunningPage), null, new Windows.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());

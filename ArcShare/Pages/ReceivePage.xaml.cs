@@ -50,7 +50,7 @@ namespace ArcShare.Pages
 			//写入文件
 			await FileIO.WriteTextAsync(indexGenerateFile, content, Windows.Storage.Streams.UnicodeEncoding.Utf8);
 			//开启服务器
-			HttpServer server = new HttpServer(4000, indexGenerateFile);
+			HttpServer server = new HttpServer(AppSettings.PreferredPort, indexGenerateFile);
 			AppSettings.CurrentServer = server;
 			this.MainFrame.Navigate(typeof(RunningPage), null, new Windows.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());
 			this.IsEnabled = true;

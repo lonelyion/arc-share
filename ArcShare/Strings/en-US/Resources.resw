@@ -304,4 +304,7 @@ If you continue catching this error, please contact the developer.</value>
   <data name="Send" xml:space="preserve">
     <value>Send</value>
   </data>
+  <data name="PortRangeWarning" xml:space="preserve">
+    <value>Port number must range from 7000 to 65535 in terms of security issue.</value>
+  </data>
 </root>

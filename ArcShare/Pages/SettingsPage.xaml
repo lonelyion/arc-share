@@ -6,9 +6,14 @@
 	xmlns:local="using:ArcShare.Pages"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:model="using:Windows.ApplicationModel"
+	xmlns:root="using:ArcShare"
+	Loaded="Page_Loaded"
 	mc:Ignorable="d">
 
-	<Grid Background="{ThemeResource SystemControlAcrylicWindowBrush}">
+	<Grid
+		Background="{ThemeResource SystemControlAcrylicWindowBrush}"
+		ScrollViewer.VerticalScrollBarVisibility="Auto"
+		ScrollViewer.VerticalScrollMode="Auto">
 		<StackPanel>
 			<TextBlock
 				x:Uid="Theme"
@@ -61,7 +66,6 @@
 				Style="{ThemeResource SubtitleTextBlockStyle}"
 				Text="Port"
 				ToolTipService.ToolTip="This may be changed automatically before running server if the port is in use by other applications" />
-
 			<TextBox
 				x:Name="portTextBox"
 				Width="150"
@@ -69,8 +73,27 @@
 				HorizontalAlignment="Left"
 				KeyDown="portTextBox_KeyDown"
 				PlaceholderText="Network Port"
-				Text="{x:Bind}" />
+				TextChanged="portTextBox_TextChanged" />
 
+			<TextBlock
+				Margin="0,10,0,0"
+				Style="{ThemeResource SubtitleTextBlockStyle}"
+				Text="Receiving directory" />
+			<StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+				<TextBox
+					x:Name="receivingDirectoryBox"
+					Width="250"
+					HorizontalAlignment="Left"
+					VerticalAlignment="Center"
+					IsReadOnly="True"
+					Text="/path/to/receiving/folder" />
+				<Button
+					x:Name="browseDirectory"
+					Margin="5,0,0,0"
+					VerticalAlignment="Center"
+					Click="browseDirectory_Click"
+					Content="Browse" />
+			</StackPanel>
 			<TextBlock
 				x:Uid="About"
 				Margin="0,45,0,0"
