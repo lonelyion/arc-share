@@ -6,8 +6,8 @@
 	xmlns:local="using:ArcShare.Pages"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:root="using:ArcShare"
+	Loaded="Page_Loaded"
 	mc:Ignorable="d">
-
 	<Grid Margin="0,0,0,0" Background="{ThemeResource SystemControlAcrylicWindowBrush}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*" />
@@ -18,11 +18,11 @@
 			<Grid Canvas.ZIndex="1">
 				<ListView
 					x:Name="fileListView"
+					DoubleTapped="stackPanel_DoubleTapped"
 					IsMultiSelectCheckBoxEnabled="False"
 					ScrollViewer.HorizontalScrollBarVisibility="Disabled"
 					ScrollViewer.VerticalScrollBarVisibility="Auto"
-					ScrollViewer.VerticalScrollMode="Auto"
-					SelectionMode="Multiple">
+					ScrollViewer.VerticalScrollMode="Auto">
 					<ListView.Header>
 						<TextBlock
 							x:Uid="FilesHistory"
@@ -30,7 +30,7 @@
 							Text="Files History" />
 					</ListView.Header>
 					<ListView.ItemTemplate>
-						<DataTemplate x:Name="FileListItemDataTemplate" x:DataType="root:FileItem">
+						<DataTemplate x:Name="FileListItemDataTemplate" x:DataType="local:ReceivedFileItem">
 							<StackPanel
 								x:Name="stackPanel"
 								VerticalAlignment="Center"
@@ -41,12 +41,12 @@
 									Height="32"
 									HorizontalAlignment="Center"
 									VerticalAlignment="Center"
-									Source="{x:Bind IconX, Mode=TwoWay}"
+									Source="{x:Bind Icon, Mode=TwoWay}"
 									Stretch="Uniform" />
 								<TextBlock
 									Margin="3,0,0,0"
 									VerticalAlignment="Center"
-									Text="{x:Bind FullName}" />
+									Text="{x:Bind Name}" />
 							</StackPanel>
 						</DataTemplate>
 					</ListView.ItemTemplate>

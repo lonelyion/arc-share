@@ -102,11 +102,4 @@ namespace ArcShare.Server
 		}
 	}
 
-
-	class MultiPartItem
-	{
-		public string FileName { get; set; }
-		public StorageFile storageFile { get; set; }
-		public Stream ReadStream;
-	}
 }

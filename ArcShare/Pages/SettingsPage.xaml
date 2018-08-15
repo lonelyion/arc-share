@@ -93,6 +93,12 @@
 					VerticalAlignment="Center"
 					Click="browseDirectory_Click"
 					Content="Browse" />
+				<Button
+					x:Name="openFolder"
+					Margin="5,0,0,0"
+					VerticalAlignment="Center"
+					Click="openFolder_Click"
+					Content="Open" />
 			</StackPanel>
 			<TextBlock
 				x:Uid="About"

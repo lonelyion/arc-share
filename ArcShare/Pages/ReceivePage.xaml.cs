@@ -1,19 +1,12 @@
 ﻿using ArcShare.Server;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -26,10 +19,7 @@ namespace ArcShare.Pages
 	{
 		public Frame MainFrame;
 
-		public ReceivePage()
-		{
-			this.InitializeComponent();
-		}
+		public ReceivePage() => this.InitializeComponent();
 
 		private async void startButton_Click(object sender, RoutedEventArgs e)
 		{
@@ -54,6 +44,66 @@ namespace ArcShare.Pages
 			AppSettings.CurrentServer = server;
 			this.MainFrame.Navigate(typeof(RunningPage), null, new Windows.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());
 			this.IsEnabled = true;
+		}
+
+		private async void Page_Loaded(object sender, RoutedEventArgs e)
+		{
+			await RefreshList();
+		}
+
+		private async Task RefreshList()
+		{
+			var list = await ReceivedFileItem.CreateListAsync();
+			foreach (var item in list) fileListView.Items.Add(item);
+
+			if (fileListView.Items.Count != 0) EmptyStateGrid.Visibility = Visibility.Collapsed;
+		}
+
+		private async void stackPanel_DoubleTapped(object sender, Windows.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
+		{
+			var temp = (sender as ListView).SelectedItem as ReceivedFileItem;
+			bool success = await Windows.System.Launcher.LaunchFileAsync(temp.File);
+			if (success) Debug.WriteLine(temp.Name + " launched successfully");
+		}
+	}
+
+
+	public class ReceivedFileItem
+	{
+		public string Name { get; set; }
+		public string Token { get; set; }
+		public StorageFile File { get; set; }
+		public ImageSource Icon { get; set; }
+
+		public ReceivedFileItem() { }
+
+		public static async Task<List<ReceivedFileItem>> CreateListAsync()
+		{
+			var created = new List<ReceivedFileItem>();
+			var list = AppSettings.ReceivedFileTokens;
+			foreach (string tok in list)
+			{
+				try
+				{
+					var item = new ReceivedFileItem();
+					var file = await Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.GetFileAsync(tok);
+
+					item.File = file;
+					item.Token = tok;
+					item.Name = file.Name;
+					item.Icon = await FileItem.GetFileIconBit(file);
+
+					created.Add(item);
+				}
+				catch (System.IO.FileNotFoundException)
+				{
+					Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.Remove(tok);
+					AppSettings.ReceivedFileTokens.Remove(tok);
+					continue;
+				}
+			}
+
+			return created;
 		}
 	}
 }

@@ -150,13 +150,10 @@
     <Content Include="Assets\qrcode_placeholder.png" />
     <Content Include="LICENSES.txt" />
     <Content Include="Server\content\404.html" />
-    <Content Include="Server\content\css\bootstrap.css" />
     <Content Include="Server\content\css\bootstrap.min.css" />
     <Content Include="Server\content\css\fluent.css" />
     <Content Include="Server\content\css\fluent.min.css" />
     <Content Include="Server\content\css\micon.min.css" />
-    <Content Include="Server\content\css\style.css" />
-    <Content Include="Server\content\css\style.min.css" />
     <Content Include="Server\content\font\OpenSans\open-sans-v15-latin-300.svg" />
     <Content Include="Server\content\font\OpenSans\open-sans-v15-latin-300italic.svg" />
     <Content Include="Server\content\font\OpenSans\open-sans-v15-latin-600.svg" />
@@ -270,31 +267,6 @@
     <Content Include="Server\content\font\OpenSans\open-sans-v15-latin-regular.ttf" />
     <None Include="Server\content\font\OpenSans\open-sans-v15-latin-regular.woff" />
     <None Include="Server\content\font\OpenSans\open-sans-v15-latin-regular.woff2" />
-    <None Include="Server\content\scss\fluent.scss" />
-    <None Include="Server\content\scss\_alert.scss" />
-    <None Include="Server\content\scss\_badges.scss" />
-    <None Include="Server\content\scss\_base.scss" />
-    <None Include="Server\content\scss\_breadcrumb.scss" />
-    <None Include="Server\content\scss\_buttons.scss" />
-    <None Include="Server\content\scss\_cards.scss" />
-    <None Include="Server\content\scss\_carousel.scss" />
-    <None Include="Server\content\scss\_colors.scss" />
-    <None Include="Server\content\scss\_dropdown.scss" />
-    <None Include="Server\content\scss\_footer.scss" />
-    <None Include="Server\content\scss\_forms.scss" />
-    <None Include="Server\content\scss\_list-group.scss" />
-    <None Include="Server\content\scss\_mixins.scss" />
-    <None Include="Server\content\scss\_modals.scss" />
-    <None Include="Server\content\scss\_navbar.scss" />
-    <None Include="Server\content\scss\_pagination.scss" />
-    <None Include="Server\content\scss\_popover.scss" />
-    <None Include="Server\content\scss\_progress.scss" />
-    <None Include="Server\content\scss\_tables.scss" />
-    <None Include="Server\content\scss\_tabs.scss" />
-    <None Include="Server\content\scss\_tooltip.scss" />
-    <None Include="Server\content\scss\_typography.scss" />
-    <None Include="Server\content\scss\_variables.scss" />
-    <None Include="Server\content\scss\_welcome.scss" />
     <PRIResource Include="Strings\en-US\Resources.resw" />
     <PRIResource Include="Strings\zh-CN\Resources.resw" />
   </ItemGroup>
@@ -345,8 +317,11 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.0.6</Version>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>11.0.2</Version>
+    </PackageReference>
     <PackageReference Include="QRCoder">
-      <Version>1.3.2</Version>
+      <Version>1.3.3</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

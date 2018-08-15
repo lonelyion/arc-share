@@ -8,6 +8,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Microsoft.Services.Store.Engagement;
+using Windows.Storage.AccessCache;
 
 namespace ArcShare
 {
@@ -90,6 +91,9 @@ namespace ArcShare
 			//Windows Developer Dashboard Notification
 			StoreServicesEngagementManager engagementManager = StoreServicesEngagementManager.GetDefault();
 			engagementManager.RegisterNotificationChannelAsync();
+
+			//Receive Files History List Change
+			AppSettings.RegisterListen();
 		}
 
 		protected override void OnActivated(IActivatedEventArgs args)

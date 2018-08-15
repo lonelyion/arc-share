@@ -1,6 +1,7 @@
 ﻿using ArcShare.Server;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -16,7 +17,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace ArcShare
 {
-	static class AppSettings
+	class AppSettings
 	{
 		static ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
 
@@ -98,13 +99,40 @@ namespace ArcShare
 				if (localSettings.Values["port"] == null) return 8000;
 				else return Convert.ToUInt16(localSettings.Values["port"]);
 			}
-			set {
+			set
+			{
 				localSettings.Values["port"] = value;
 			}
 		}
 
 		public static StorageFolder ReceiveFolder { get; set; }
+
+		public static ObservableCollection<string> ReceivedFileTokens { get; set; }
+
+		public static void RegisterListen()
+		{
+			
+			if(localSettings.Values["tokens"] != null)
+			{
+				string json = localSettings.Values["tokens"].ToString();
+				ReceivedFileTokens = Newtonsoft.Json.JsonConvert.DeserializeObject<ObservableCollection<string>>(json);
+			}
+			else
+			{
+				ReceivedFileTokens = new ObservableCollection<string>();
+			}
+
+			ReceivedFileTokens.CollectionChanged += ReceivedFileTokens_CollectionChanged;
+
+		}
+
+		private static void ReceivedFileTokens_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+		{
+			string jsonx = Newtonsoft.Json.JsonConvert.SerializeObject(ReceivedFileTokens);
+			localSettings.Values["tokens"] = jsonx;
+		}
 	}
+
 
 	public class FileItem
 	{
@@ -216,10 +244,5 @@ namespace ArcShare
 			await output.SetSourceAsync(image);
 			return output;
 		}
-	}
-
-	public class ReceivedFileItem
-	{
-
 	}
 }

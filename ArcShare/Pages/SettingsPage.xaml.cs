@@ -48,15 +48,23 @@ namespace ArcShare.Pages
 
 			portTextBox.Text = AppSettings.PreferredPort.ToString();
 
-			if(AppSettings.ReceiveFolder == null)
+			if (AppSettings.ReceiveFolder == null)
 			{
-				AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
+				try
+				{
+					AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
+				}
+				catch(System.IO.FileNotFoundException)
+				{
+					AppSettings.ReceiveFolder = await DownloadsFolder.CreateFolderAsync("Received", CreationCollisionOption.GenerateUniqueName);
+					StorageApplicationPermissions.FutureAccessList.AddOrReplace("ReceiveFolderToken", AppSettings.ReceiveFolder);
+				}
 			}
-			if(AppSettings.ReceiveFolder != null)
+			if (AppSettings.ReceiveFolder != null)
 			{
 				receivingDirectoryBox.Text = AppSettings.ReceiveFolder.Path;
 			}
-			
+
 			if (Microsoft.Services.Store.Engagement.StoreServicesFeedbackLauncher.IsSupported())
 				this.feedbackButton.Visibility = Visibility.Visible;
 		}
@@ -135,7 +143,7 @@ namespace ArcShare.Pages
 			picker.FileTypeFilter.Add("*");
 
 			StorageFolder folder = await picker.PickSingleFolderAsync();
-			if(folder != null)
+			if (folder != null)
 			{
 				StorageApplicationPermissions.FutureAccessList.AddOrReplace("ReceiveFolderToken", folder);
 				this.receivingDirectoryBox.Text = folder.Path;
@@ -172,8 +180,12 @@ namespace ArcShare.Pages
 			var launcher = Microsoft.Services.Store.Engagement.StoreServicesFeedbackLauncher.GetDefault();
 			await launcher.LaunchAsync();
 		}
+
 		#endregion
 
-
+		private void openFolder_Click(object sender, RoutedEventArgs e)
+		{
+			Windows.System.Launcher.LaunchFolderAsync(AppSettings.ReceiveFolder);
+		}
 	}
 }

@@ -95,6 +95,7 @@ namespace ArcShare.Server
 					Stream WriteStream = null;
 					//存文件的目录
 					StorageFolder folderToStore;
+					AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
 					if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
 					else folderToStore = await DownloadsFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.GenerateUniqueName);
 
@@ -169,6 +170,9 @@ namespace ArcShare.Server
 								if (WriteStream != null) await WriteStream.FlushAsync();
 								var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
 								WriteStream = (await storageFile.OpenStreamForWriteAsync());
+
+								string fatoken = StorageApplicationPermissions.FutureAccessList.Add(storageFile);
+								AppSettings.ReceivedFileTokens.Add(fatoken);
 							}
 							if (boundaryLineCount > 4)
 							{
