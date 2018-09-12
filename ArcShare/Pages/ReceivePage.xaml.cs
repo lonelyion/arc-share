@@ -48,7 +48,15 @@ namespace ArcShare.Pages
 
 		private async void Page_Loaded(object sender, RoutedEventArgs e)
 		{
-			await RefreshList();
+			try
+			{
+				await RefreshList();
+			}
+			catch(System.InvalidOperationException ex)
+			{
+
+			}
+			
 		}
 
 		private async Task RefreshList()

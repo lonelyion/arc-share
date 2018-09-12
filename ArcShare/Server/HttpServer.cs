@@ -131,7 +131,6 @@ namespace ArcShare.Server
 
 						//能到这里了说明肯定不是GET
 						List<byte[]> lines = ReadLines(buffer);
-						bool endFlag = false;
 						for (int i = 0; i < lines.Count; i++)
 						{
 							lineCount++;
@@ -147,15 +146,24 @@ namespace ArcShare.Server
 								boundaryLineCount = 1;
 							}
 
-							if (boundaryLineCount == 1 || boundaryLineCount == 3 || boundaryLineCount == 4)
+							if (boundaryLineCount == 3 || boundaryLineCount == 4)
 							{
 								boundaryLineCount++;
 								continue;
 							}
 							if (boundaryLineCount == 2)
 							{
-								string name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
-
+								//获取文件名
+								string name = string.Empty;
+								if (linestr.StartsWith("Content-Disposition: form-data; name=\"")) {
+									name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
+								}
+								else
+								{
+									boundaryLineCount++;
+									continue;
+								}
+								//读到了冗余文件
 								if (name == "4E69DE01-D335-46F3-A43D-B905BB2C81CA.arc")
 								{
 									EndFlag = true;
@@ -166,16 +174,21 @@ namespace ArcShare.Server
 
 									break;
 								}
-
+								//开Stream
 								if (WriteStream != null) await WriteStream.FlushAsync();
 								var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
 								WriteStream = (await storageFile.OpenStreamForWriteAsync());
-
+								//添加到FA List方便历史记录和后续访问
+								if (AppSettings.ReceivedFileTokens.Count >= 998)
+								{
+									AppSettings.ReceivedFileTokens.RemoveAt(AppSettings.ReceivedFileTokens.Count - 1);
+								}
 								string fatoken = StorageApplicationPermissions.FutureAccessList.Add(storageFile);
 								AppSettings.ReceivedFileTokens.Add(fatoken);
 							}
 							if (boundaryLineCount > 4)
 							{
+								//把读取到的文件内容写入文件
 								if (WriteStream != null)
 								{
 									await WriteStream.WriteAsync(lines[i], 0, lines[i].Length);
@@ -329,7 +342,7 @@ namespace ArcShare.Server
 				return;
 			}
 
-			if (header.RequestedUrl == "/" || header.RequestedUrl == "/index")
+			if (header.RequestedUrl == "/" || header.RequestedUrl == "/index" || header.RequestedUrl.StartsWith("/?"))
 			{
 				//主页
 				if (IndexFile == null)
