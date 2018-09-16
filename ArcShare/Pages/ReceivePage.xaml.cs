@@ -52,7 +52,11 @@ namespace ArcShare.Pages
 			{
 				await RefreshList();
 			}
-			catch(System.InvalidOperationException ex)
+			catch(System.InvalidOperationException ex1)
+			{
+
+			}
+			catch(Exception ex2)
 			{
 
 			}

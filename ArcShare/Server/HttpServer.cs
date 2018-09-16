@@ -13,6 +13,8 @@ using Windows.Storage;
 using Windows.Networking.Connectivity;
 using Windows.UI.Xaml.Controls;
 using Windows.Storage.AccessCache;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace ArcShare.Server
 {
@@ -61,7 +63,7 @@ namespace ArcShare.Server
 		{
 			Port = p;
 			this.socketListener = new StreamSocketListener();
-			socketListener.ConnectionReceived += SocketListener_ConnectionReceived;
+			socketListener.ConnectionReceived += async (sender, arg) => await SocketListener_ConnectionReceived(sender, arg);
 
 			Status = new ServerStatus() { ConnectionNumber = 0 };
 		}
@@ -74,7 +76,7 @@ namespace ArcShare.Server
 			StatusChanged?.Invoke(this, args);
 		}
 
-		private async void SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
+		private async Task SocketListener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
 		{
 			StreamSocket socket = args.Socket;
 			StringBuilder httpRequestBuilder = new StringBuilder();
@@ -87,17 +89,9 @@ namespace ArcShare.Server
 					int count = 0, time = 0;
 					//Buffer数组
 					byte[] buffer = new byte[BufferSize];
-					//HTTP Request 请求头
+					//HTTP Request 请求头 // TODO:用Dictionary<string, string>重构
 					HttpRequestHeader header = new HttpRequestHeader();
-					//Body当前读了多少行了，boundary开始有多少行了
-					int lineCount = 0, boundaryLineCount = 0;
-					//用于写文件的流
-					Stream WriteStream = null;
-					//存文件的目录
-					StorageFolder folderToStore;
-					AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
-					if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
-					else folderToStore = await DownloadsFolder.CreateFolderAsync("Arc Share", CreationCollisionOption.GenerateUniqueName);
+					
 
 					//当这个为true的时候表明读取到了冗余文件，结束读取
 					bool EndFlag = false;
@@ -122,88 +116,19 @@ namespace ArcShare.Server
 								return;
 							}
 							else
-							{   //请求头已经没用了，直接把buffer的后半段赋值给buffer吧
-								buffer = buffer.Skip(index + 4).ToArray();
-								//找到Boundary
-								Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
+							{
+								//存文件的目录
+								StorageFolder folderToStore;
+								AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
+								if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
+								else folderToStore = await DownloadsFolder.CreateFolderAsync("Received", CreationCollisionOption.GenerateUniqueName);
+
+								ParseFiles(input, header.ContentType, folderToStore, WriteFileProcess).Wait();
+								return;
 							}
 						}
 
-						//能到这里了说明肯定不是GET
-						List<byte[]> lines = ReadLines(buffer);
-						for (int i = 0; i < lines.Count; i++)
-						{
-							lineCount++;
-
-							string linestr = Encoding.UTF8.GetString(lines[i]);
-							if (linestr.StartsWith("--" + Boundary))
-							{
-								if (linestr.StartsWith("--" + Boundary + "--"))
-								{
-									//结束了
-									break;
-								}
-								boundaryLineCount = 1;
-							}
-
-							if (boundaryLineCount == 3 || boundaryLineCount == 4)
-							{
-								boundaryLineCount++;
-								continue;
-							}
-							if (boundaryLineCount == 2)
-							{
-								//获取文件名
-								string name = string.Empty;
-								if (linestr.StartsWith("Content-Disposition: form-data; name=\"")) {
-									name = linestr.Substring(linestr.IndexOf("filename=") + 9).Replace("\r", "").Replace("\n", "").Replace("\"", "");
-								}
-								else
-								{
-									boundaryLineCount++;
-									continue;
-								}
-								//读到了冗余文件
-								if (name == "4E69DE01-D335-46F3-A43D-B905BB2C81CA.arc")
-								{
-									EndFlag = true;
-
-									await WriteResponseAsync(socket.OutputStream,
-										await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Server/content/receive.html")),
-										HttpStatusCode.OK, false);
-
-									break;
-								}
-								//开Stream
-								if (WriteStream != null) await WriteStream.FlushAsync();
-								var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
-								WriteStream = (await storageFile.OpenStreamForWriteAsync());
-								//添加到FA List方便历史记录和后续访问
-								if (AppSettings.ReceivedFileTokens.Count >= 998)
-								{
-									AppSettings.ReceivedFileTokens.RemoveAt(AppSettings.ReceivedFileTokens.Count - 1);
-								}
-								string fatoken = StorageApplicationPermissions.FutureAccessList.Add(storageFile);
-								AppSettings.ReceivedFileTokens.Add(fatoken);
-							}
-							if (boundaryLineCount > 4)
-							{
-								//把读取到的文件内容写入文件
-								if (WriteStream != null)
-								{
-									await WriteStream.WriteAsync(lines[i], 0, lines[i].Length);
-								}
-							}
-							boundaryLineCount++;
-						} //for
-
 					} //while
-
-					if (WriteStream != null)
-					{
-						await WriteStream.FlushAsync();
-						WriteStream.Dispose();
-					}
 				}//try
 				catch (Exception ex)
 				{
@@ -213,6 +138,41 @@ namespace ArcShare.Server
 			GC.Collect();
 		}
 		#endregion
+
+
+		public async Task ParseFiles(Stream data, string contentType, StorageFolder folderToStorage , Func<string, Stream, StorageFolder, Task> fileProcessor)
+		{
+			var streamContent = new StreamContent(data);
+			streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+			var Provider = await streamContent.ReadAsMultipartAsync();
+
+			foreach (var httpContent in Provider.Contents)
+			{
+				var filename = httpContent.Headers.ContentDisposition.FileName;
+				if(string.IsNullOrWhiteSpace(filename))
+					continue;
+
+				using (Stream fileContents = await httpContent.ReadAsStreamAsync())
+				{
+					await fileProcessor(filename, fileContents, folderToStorage);
+				}
+			}
+		}
+
+		private async Task WriteFileProcess(string name, Stream data, StorageFolder folderToStore)
+		{
+			int count = 0;
+			byte[] buffer = new byte[1 << 16];
+			var storageFile = await folderToStore.CreateFileAsync(name, CreationCollisionOption.GenerateUniqueName);
+			Stream writeStream = await storageFile.OpenStreamForWriteAsync();
+			while ((count = data.Read(buffer, 0, buffer.Length)) > 0)
+			{
+				if (writeStream != null)
+					await writeStream.WriteAsync(buffer, 0, count);
+			}
+			writeStream.Flush();
+			return;
+		}
 
 		/// <summary>
 		/// 用Knuth–Morris–Pratt算法在byte数组中查找第一个出现p的位置
@@ -439,9 +399,9 @@ namespace ArcShare.Server
 		}
 
 
-		private byte[] zipheader = { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
+		private readonly byte[] zipheader = { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
 		//                           Signature(4bytes)       version20   flags(enable UTF8)     no-compresion
-		private byte[] cdheader = { 0x50, 0x4B, 0x01, 0x02, 0x14, 0x00, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
+		private readonly byte[] cdheader = { 0x50, 0x4B, 0x01, 0x02, 0x14, 0x00, 0x14, 0x00, 0x00, 0x08, 0x00, 0x00 };
 		//							//Signature             Version		PKVersion	Flags		no-compression
 		/// <summary>
 		/// 把文件列表都打成ZIP包再实时将数据流输出到HTTP Response
@@ -662,7 +622,7 @@ namespace ArcShare.Server
 			if (icp?.NetworkAdapter == null) return null;
 			var hostname =
 				NetworkInformation.GetHostNames()
-					.SingleOrDefault(
+					.FirstOrDefault(
 						hn =>
 							hn.IPInformation?.NetworkAdapter != null && hn.IPInformation.NetworkAdapter.NetworkAdapterId
 							== icp.NetworkAdapter.NetworkAdapterId);
