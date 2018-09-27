@@ -15,6 +15,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.Storage.AccessCache;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using HttpMultipartParser;
 
 namespace ArcShare.Server
 {
@@ -37,7 +38,7 @@ namespace ArcShare.Server
 	{
 		#region Members
 		private readonly StreamSocketListener socketListener;
-		ushort Port = 4000;
+		ushort Port = 8000;
 		private const int BufferSize = 1 << 16; //64kb
 		private StorageFile IndexFile;
 		private List<FileItem> Collection;
@@ -83,64 +84,111 @@ namespace ArcShare.Server
 			//读取输入数据流
 			using (var input = socket.InputStream.AsStreamForRead())
 			{
-				try
+				//try
+				//{
+				//每次读取的字节数、第time次写buffer
+				int count = 0, time = 0;
+				//Buffer数组
+				byte[] buffer = new byte[BufferSize];
+				//HTTP Request 请求头
+				HttpRequestHeader header = new HttpRequestHeader();
+				//Body当前读了多少行了，boundary开始有多少行了
+				int lineCount = 0, boundaryLineCount = 0;
+				//用于写文件的流
+				Stream WriteStream = null;
+				//存文件的目录
+				StorageFolder folderToStore;
+				AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
+				if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
+				else folderToStore = await DownloadsFolder.CreateFolderAsync("Received", CreationCollisionOption.GenerateUniqueName);
+
+				//当这个为true的时候表明读取到了冗余文件，结束读取
+				bool EndFlag = false;
+
+				//每次读取一定数量的字节存入buffer
+				while ((count = input.Read(buffer, 0, buffer.Length)) > 0 && !EndFlag)
 				{
-					//每次读取的字节数、第time次写buffer
-					int count = 0, time = 0;
-					//Buffer数组
-					byte[] buffer = new byte[BufferSize];
-					//HTTP Request 请求头 // TODO:用Dictionary<string, string>重构
-					HttpRequestHeader header = new HttpRequestHeader();
-					
-
-					//当这个为true的时候表明读取到了冗余文件，结束读取
-					bool EndFlag = false;
-
-					//每次读取一定数量的字节存入buffer
-					while ((count = input.Read(buffer, 0, buffer.Length)) > 0 && !EndFlag)
+					time++;
+					if (time == 1)
 					{
-						time++;
-						if (time == 1)
-						{
-							//第一次读取，Request Header肯定在里面（没有哪个header会超过64kb吧）
-							//现在要找到第一次出现\r\n\r\n的位置
-							int index = KMPSearchInBytes(buffer, new byte[] { 0x0D, 0x0A, 0x0D, 0x0A });
-							byte[] headerBytes = buffer.Take(index).ToArray();
-							string headerStr = Encoding.UTF8.GetString(headerBytes);
-							header = HttpRequestHeader.Create(headerStr);
-							//==请求头处理完成
+						//第一次读取，Request Header肯定在里面（没有哪个header会超过64kb吧）
+						//现在要找到第一次出现\r\n\r\n的位置
+						int index = KMPSearchInBytes(buffer, new byte[] { 0x0D, 0x0A, 0x0D, 0x0A });
+						byte[] headerBytes = buffer.Take(index).ToArray();
+						string headerStr = Encoding.UTF8.GetString(headerBytes);
+						header = HttpRequestHeader.Create(headerStr);
+						//==请求头处理完成
 
-							if (header.Method == "GET")
-							{   //GET交给它就可以了
-								await OnGet(socket, header);
-								return;
-							}
-							else
-							{
-								//存文件的目录
-								StorageFolder folderToStore;
-								AppSettings.ReceiveFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync("ReceiveFolderToken");
-								if (AppSettings.ReceiveFolder != null) folderToStore = AppSettings.ReceiveFolder;
-								else folderToStore = await DownloadsFolder.CreateFolderAsync("Received", CreationCollisionOption.GenerateUniqueName);
-
-								ParseFiles(input, header.ContentType, folderToStore, WriteFileProcess).Wait();
-								return;
-							}
+						if (header.Method == "GET")
+						{   //GET交给它就可以了
+							await OnGet(socket, header);
+							return;
 						}
+						else
+						{
+							//ParseFiles(input, header.ContentType, folderToStore, WriteFileProcess).Wait();
+							//Stream rs = socket.InputStream.AsStreamForRead();
+							//await input.CopyToAsync(rs);
+							Boundary = header.ContentType.Substring(header.ContentType.LastIndexOf('=') + 1).Replace("\r", "");
 
-					} //while
-				}//try
-				catch (Exception ex)
+							var parser = new StreamingMultipartFormDataParser(input, Boundary);
+							parser.ParameterHandler += parameter => DoSomethingWithParameter(parameter);
+
+							//有BUG
+							//Workaround想法：发送前先POST一个文件列表过来，依次开Stream，然后再给这个
+							//parser.FileHandler += (name, fileName, type, disposition, buffer, bytes) => WriteDataToFile(fileName, buffer, bytes);
+							parser.FileHandler += async (name, fileName, type, disposition, buf, bytes) => await WriteDataToFile(folderToStore, fileName, buf, bytes);
+								// Write the part of the file we've recieved to a file stream. (Or do something else)
+								// Assume that filesreamsByName is a Dictionary<string, FileStream> of all the files
+								// we are writing.
+								// filestreamsByName[name].Write(buffer, 0, bytes);
+							parser.StreamClosedHandler += () =>
+							{
+								// Do things when my input stream is closed
+								Debug.WriteLine("input stream closed");
+							};
+
+							parser.Run();
+							return;
+						}
+					}
+
+				} //while
+
+				if (WriteStream != null)
 				{
-					Debug.WriteLine(ex.Message, "Socket Error");
+					await WriteStream.FlushAsync();
+					WriteStream.Dispose();
 				}
+				//}//try
 			} //using
 			GC.Collect();
+		}
+
+		Dictionary<string, Stream> streams = new Dictionary<string, Stream>();
+		private async Task WriteDataToFile(StorageFolder folder, string filename, byte[] buf, int bytes)
+		{
+			if (streams.Keys.Contains(filename) == false)
+			{
+				var storageFile = await folder.CreateFileAsync(filename, CreationCollisionOption.GenerateUniqueName).AsTask();
+				Stream writeStream = await storageFile.OpenStreamForWriteAsync();
+				streams.Add(filename, writeStream);
+			}
+			streams[filename].Write(buf, 0, bytes);
+			return;
+		}
+
+		private void DoSomethingWithParameter(ParameterPart parameter)
+		{
+			Debug.WriteLine(parameter.Name);
+			Debug.WriteLine(parameter.Data);
+			return;
 		}
 		#endregion
 
 
-		public async Task ParseFiles(Stream data, string contentType, StorageFolder folderToStorage , Func<string, Stream, StorageFolder, Task> fileProcessor)
+		//微软方案1：先读到RAM再写外存
+		public async Task ParseFiles(Stream data, string contentType, StorageFolder folderToStorage, Func<string, Stream, StorageFolder, Task> fileProcessor)
 		{
 			var streamContent = new StreamContent(data);
 			streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
@@ -148,8 +196,8 @@ namespace ArcShare.Server
 
 			foreach (var httpContent in Provider.Contents)
 			{
-				var filename = httpContent.Headers.ContentDisposition.FileName;
-				if(string.IsNullOrWhiteSpace(filename))
+				var filename = httpContent.Headers.ContentDisposition.FileName.Replace("\"", "");
+				if (string.IsNullOrWhiteSpace(filename))
 					continue;
 
 				using (Stream fileContents = await httpContent.ReadAsStreamAsync())
@@ -266,7 +314,7 @@ namespace ArcShare.Server
 				if (b1)
 				{
 					int len = lines[i].Length;
-					if(len > 1)
+					if (len > 1)
 					{
 						bool b2 = (lines[i][len - 1] == 0x0A && lines[i][len - 2] == 0x0D);
 						if (b2)
@@ -595,7 +643,7 @@ namespace ArcShare.Server
 				Debug.WriteLine(string.Format("HTTP Server is running at {0}", ServerAddress));
 				return;
 			}
-			catch(System.Runtime.InteropServices.COMException)
+			catch (System.Runtime.InteropServices.COMException)
 			{
 				Port++;
 				Start();

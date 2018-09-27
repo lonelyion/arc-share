@@ -341,6 +341,12 @@
   <ItemGroup>
     <XliffResource Include="MultilingualResources\ArcShare.zh-CN.xlf" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HttpMultipartParser\HttpMultipartParser.csproj">
+      <Project>{4691988a-ce66-40cb-afb4-2757255e03e0}</Project>
+      <Name>HttpMultipartParser</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

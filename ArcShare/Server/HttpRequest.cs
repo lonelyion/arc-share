@@ -84,7 +84,7 @@ namespace ArcShare.Server
 						request.Origin = parts[1];
 						break;
 					case "Content-Type":
-						request.ContentType = parts[1];
+						request.ContentType = parts[1].Replace("\r", "").Replace("\n", "");
 						break;
 					case "Content-Length":
 						request.ContentLength = Convert.ToInt64(parts[1]);
